@@ -14,14 +14,14 @@ public class ImportJobRunner {
 
     final static Logger logger = LoggerFactory.getLogger(ImportJobRunner.class);
     
-    public static void start(DBConnectionParameter dbParam, EMailSender emailSender, String kvwmapUrl) {
+    public static void start(DBConnectionParameter dbParam, EMailSender emailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
         Connection con = null;
         try {
             con = BPlanImportStarter.getConnection(dbParam);
             
             List<JobEntry> l = ConfigReader.readJobs(con, kvwmapUrl);
             if (l!=null && l.size()>0) {                
-                BPlanImporter.runImport(l, con, emailSender, kvwmapUrl);
+                BPlanImporter.runImport(l, con, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
             }
         }
         catch (Exception ex) {

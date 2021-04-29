@@ -38,21 +38,27 @@ public class BPlanImportStarter {
     final static String DB_CONNECTION_PARAMS = "DB_CONNECTION_PARAMS";
     final static String EMAIL_SENDER = "emailCredential";
     final static String KVWMAP_URL = "KVWMAP_URL";
-
+    final static String KVWMAP_LOGIN_NAME = "KVWMAP_LOGIN_NAME";
+    final static String KVWMAP_PASWORD = "KVWMAP_PASWORD";
     
 
     final private DBConnectionParameter dbParam;
     final private String cronExpr;
     final private EMailSender emailSender;
     final private String kvwmapUrl;
+    final private String kvwmapLoginName;
+    final private String kvwmapPassword;
+    
     Scheduler scheduler;
 
 
-    BPlanImportStarter(DBConnectionParameter dbParam, String cronExpr, String[] emailCredential, String kvwmapUrl) throws SchedulerException {
+    BPlanImportStarter(DBConnectionParameter dbParam, String cronExpr, String[] emailCredential, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) throws SchedulerException {
         this.dbParam = dbParam;
         this.cronExpr = cronExpr;   
         this.emailSender = new EMailSender(emailCredential[0], emailCredential[1]);
         this.kvwmapUrl = kvwmapUrl;
+        this.kvwmapLoginName = kvwmapLoginName;
+        this.kvwmapPassword = kvwmapPassword;
     }
 
     
@@ -66,7 +72,9 @@ public class BPlanImportStarter {
                 DBConnectionParameter dbParam = (DBConnectionParameter)context.getJobDetail().getJobDataMap().get(DB_CONNECTION_PARAMS);
                 EMailSender emailSender = (EMailSender)context.getJobDetail().getJobDataMap().get(EMAIL_SENDER);
                 String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
-                BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl);
+                String kvwmapLoginName = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_LOGIN_NAME);
+                String kvwmapPassword = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_PASWORD);
+                BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
             }
             catch (Throwable ex) {
                 ex.printStackTrace();
@@ -85,7 +93,9 @@ public class BPlanImportStarter {
                 DBConnectionParameter dbParam = (DBConnectionParameter)context.getJobDetail().getJobDataMap().get(DB_CONNECTION_PARAMS);
                 EMailSender emailSender = (EMailSender)context.getJobDetail().getJobDataMap().get(EMAIL_SENDER);
                 String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
-                ImportJobRunner.start(dbParam, emailSender, kvwmapUrl);     
+                String kvwmapLoginName = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_LOGIN_NAME);
+                String kvwmapPassword = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_PASWORD);
+                ImportJobRunner.start(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);     
             }
             catch (Throwable ex) {
                 ex.printStackTrace();
@@ -110,6 +120,8 @@ public class BPlanImportStarter {
         job01.getJobDataMap().put(DB_CONNECTION_PARAMS, this.dbParam);
         job01.getJobDataMap().put(EMAIL_SENDER, this.emailSender);
         job01.getJobDataMap().put(KVWMAP_URL, this.kvwmapUrl);
+        job01.getJobDataMap().put(KVWMAP_LOGIN_NAME, this.kvwmapLoginName);
+        job01.getJobDataMap().put(KVWMAP_PASWORD, this.kvwmapPassword);
 
         Trigger trigger01 = TriggerBuilder.newTrigger()
                 .withSchedule(CronScheduleBuilder.cronSchedule(this.cronExpr))
@@ -132,7 +144,7 @@ public class BPlanImportStarter {
     }
     
     public void runNow() throws SchedulerException {
-        BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl);
+        BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
         if (cronExpr!=null) {
             this.start();
         }
@@ -185,8 +197,10 @@ public class BPlanImportStarter {
                 emailCredential = new String[] {emailUser, emailPwd};
             }
             
-            String kvwmapUrl = argList.get("kvwmap_url");   
-
+            String kvwmapUrl = argList.get("kvwmap_url");
+            String kvwmapUserName = argList.get("kvwmap_username");  
+            String kvwmapPassword = argList.get("kvwmap_password");  
+            
             List<String> missingParams = new ArrayList<>();
             if (dburl==null) {
                 missingParams.add("dburl");
@@ -196,6 +210,12 @@ public class BPlanImportStarter {
             }
             if (kvwmapUrl==null) {
                 missingParams.add("kvwmap_url");
+            }
+            if (kvwmapUserName==null) {
+                missingParams.add("kvwmap_username");
+            }
+            if (kvwmapPassword==null) {
+                missingParams.add("kvwmap_password");
             }
             boolean runNow = sRunNow!=null && "true".equalsIgnoreCase(sRunNow);
             
@@ -211,7 +231,7 @@ public class BPlanImportStarter {
             File f = new File(pgpass);
 
             DBConnectionParameter dbParam = DBUtil.getConnectionParameter(f, dburl);
-            BPlanImportStarter starter = new BPlanImportStarter(dbParam, cronExpr, emailCredential, kvwmapUrl);
+            BPlanImportStarter starter = new BPlanImportStarter(dbParam, cronExpr, emailCredential, kvwmapUrl, kvwmapUserName, kvwmapPassword);
             if (emailCredential == null) {
                 System.out.println("E-Mail-Versand ist deaktiviert, Parameter emailUser oder emailPwd wurde nicht angegeben.");
             }
@@ -235,6 +255,8 @@ public class BPlanImportStarter {
         System.out.println("\tpgpass: [path zur pgpass-Datei]");
         System.out.println("\tcronExpr:");
         System.out.println("\tkvwmap_url:");
+        System.out.println("\tkvwmap_username:");
+        System.out.println("\tkvwmap_password:");
         System.out.println("\t\thttp://bauleitplaene-mv.de:8085/kvwmap_dev/konverter/index.php");
         System.out.println("\t\thttps://bauleitplaene-mv.de/konverter/index.php");
         

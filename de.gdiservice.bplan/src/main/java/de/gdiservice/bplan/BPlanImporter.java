@@ -38,7 +38,11 @@ public class BPlanImporter {
 
     private String bplanTable;
     private String konvertierungTable;
+    
     private String kvwmapUrl;
+    
+    private String kvwmapLoginName;
+    private String kvwmapPassword;
 
     WFSFactory<BPlan> wfsFactory;
     
@@ -49,10 +53,12 @@ public class BPlanImporter {
         v5_3
     }
 
-    public BPlanImporter(String konvertierungTable, String bplanTable, Version version, String kvwmapUrl) {
+    public BPlanImporter(String konvertierungTable, String bplanTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
         this.bplanTable = bplanTable;
         this.konvertierungTable = konvertierungTable;
         this.kvwmapUrl = kvwmapUrl;
+        this.kvwmapLoginName = kvwmapLoginName;
+        this.kvwmapPassword = kvwmapPassword;
         if (version==Version.v5_1) {
             this.wfsFactory = new BFitzBPlanFactoryV5_1();
         } else {
@@ -208,17 +214,15 @@ public class BPlanImporter {
                toURL().toExternalForm();
    }
     
-    public static boolean validate(Konvertierung konvertierung, BPlan bplan, String kvwmapUrl, ImportLogger importLogger) throws Exception {
-        final String login_name = "planimporter";
-        final String password = "xw5yP}2^b2<*arZm";
+    public boolean validate(Konvertierung konvertierung, BPlan bplan, String kvwmapUrl, ImportLogger importLogger) throws Exception {
         
         boolean succedded = true; 
         
         StringBuilder sb = new StringBuilder(kvwmapUrl);                
         sb.append("?go=xplankonverter_konvertierung");
         sb.append("&konvertierung_id=").append(bplan.getKonvertierungId());
-        sb.append("&login_name=").append(login_name);
-        sb.append("&passwort=").append(password);
+        sb.append("&login_name=").append(this.kvwmapLoginName);
+        sb.append("&passwort=").append(this.kvwmapPassword);
         sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
         
         String s = parseUrl(sb.toString());        
@@ -463,10 +467,10 @@ public class BPlanImporter {
 
 
     
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl) {
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl);
+            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
@@ -492,7 +496,7 @@ public class BPlanImporter {
 
     }
 
-    public static void runImport(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl) {
+    public static void runImport(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
         Connection con = null;
         try {
             con = BPlanImportStarter.getConnection(dbParam);
@@ -500,7 +504,7 @@ public class BPlanImporter {
             try {
                 List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(con, "xplankonverter.import_services");
                 
-                runImport(importConfigEntries, con, eMailSender, kvwmapUrl);
+                runImport(importConfigEntries, con, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
