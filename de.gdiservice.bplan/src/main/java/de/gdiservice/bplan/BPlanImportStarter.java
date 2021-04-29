@@ -5,7 +5,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -34,7 +33,7 @@ import de.gdiservice.util.EMailSender;
 
 public class BPlanImportStarter {
 
-    final static Logger logger = LoggerFactory.getLogger(BPlanImporter.class);
+    final static Logger logger = LoggerFactory.getLogger(BPlanImportStarter.class);
 
     final static String DB_CONNECTION_PARAMS = "DB_CONNECTION_PARAMS";
     final static String EMAIL_SENDER = "emailCredential";
@@ -61,12 +60,18 @@ public class BPlanImportStarter {
     public static class ImportJob implements Job {
 
         public void execute(JobExecutionContext context) throws JobExecutionException {
-            System.err.println("!!execute "+new Date());
+            logger.info("execute ImportJob"+new Date());
 
-            DBConnectionParameter dbParam = (DBConnectionParameter)context.getJobDetail().getJobDataMap().get(DB_CONNECTION_PARAMS);
-            EMailSender emailSender = (EMailSender)context.getJobDetail().getJobDataMap().get(EMAIL_SENDER);
-            String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
-            BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl);
+            try {
+                DBConnectionParameter dbParam = (DBConnectionParameter)context.getJobDetail().getJobDataMap().get(DB_CONNECTION_PARAMS);
+                EMailSender emailSender = (EMailSender)context.getJobDetail().getJobDataMap().get(EMAIL_SENDER);
+                String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
+                BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl);
+            }
+            catch (Throwable ex) {
+                ex.printStackTrace();
+                logger.error("Error ImportJob", ex);
+            }
         }
     }  
     
@@ -74,12 +79,18 @@ public class BPlanImportStarter {
     public static class JobReaderJob implements Job {
 
         public void execute(JobExecutionContext context) throws JobExecutionException {
-            System.err.println("!!execute "+new Date());
+            logger.info("execute JobReaderJob "+new Date());
 
-            DBConnectionParameter dbParam = (DBConnectionParameter)context.getJobDetail().getJobDataMap().get(DB_CONNECTION_PARAMS);
-            EMailSender emailSender = (EMailSender)context.getJobDetail().getJobDataMap().get(EMAIL_SENDER);
-            String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
-            ImportJobRunner.start(dbParam, emailSender, kvwmapUrl);            
+            try {
+                DBConnectionParameter dbParam = (DBConnectionParameter)context.getJobDetail().getJobDataMap().get(DB_CONNECTION_PARAMS);
+                EMailSender emailSender = (EMailSender)context.getJobDetail().getJobDataMap().get(EMAIL_SENDER);
+                String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
+                ImportJobRunner.start(dbParam, emailSender, kvwmapUrl);     
+            }
+            catch (Throwable ex) {
+                ex.printStackTrace();
+                logger.error("Error JobReaderJob", ex);
+            }
         }
     }    
 
@@ -113,7 +124,7 @@ public class BPlanImportStarter {
         job02.getJobDataMap().put(KVWMAP_URL, this.kvwmapUrl);
 
         Trigger trigger02 = TriggerBuilder.newTrigger()                
-                .withSchedule(CronScheduleBuilder.cronSchedule(this.cronExpr))
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0/5 * * * ?"))
                 .build();        
         scheduler.scheduleJob(job02, trigger02);
         
@@ -158,8 +169,7 @@ public class BPlanImportStarter {
 
 
     public static void main(String[] args) {
-        try {
-            System.out.println(Arrays.toString(args));
+        try {            
             ArgList argList = new ArgList(args);
             
             String dburl = argList.get("dburl"); // "username@host:port/dbname";

@@ -227,6 +227,8 @@ public class BPlanDAO {
     }
     
     BPlan createBPlan(ResultSet rs) throws SQLException {
+        
+        // "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum","rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
         int i=1;
         BPlan bplan = new BPlan();
         bplan.gml_id = rs.getObject(i++, UUID.class);
@@ -239,7 +241,14 @@ public class BPlanDAO {
             bplan.externeReferenzes = getArray(rs.getArray(i++), PGExterneReferenz[].class);          
 
             bplan.inkrafttretensdatum = rs.getDate(i++);
-            bplan.rechtsstand = getString((PGobject)rs.getObject(i++));
+            Object o = rs.getObject(i++);
+            if (o instanceof String) {
+                bplan.rechtsstand = (String)o;
+            } else if (o instanceof PGobject){
+                bplan.rechtsstand = getString((PGobject)o);
+            } else {
+                logger.error("bplan.rechtsstand kann nicht interpretiert werden "+o.getClass()+" "+bplan.gml_id);
+            }
 
             bplan.planart = getStrings(rs.getArray(i++));
 

@@ -154,7 +154,7 @@ public class BPlanImporter {
                                 bplanDao.insert(teilPlan);
                                 con.commit();
                                 
-                                boolean succeded = validate(konvertierung, dbPlan, kvwmapUrl, importLogger);
+                                boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
                                 konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
                                 logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
@@ -171,7 +171,7 @@ public class BPlanImporter {
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
                                     con.commit();
                                     
-                                    boolean succeded = validate(konvertierung, dbPlan, kvwmapUrl, importLogger);
+                                    boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
                                     konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
                                     
                                 } else {
@@ -185,10 +185,9 @@ public class BPlanImporter {
                         logger.info("BPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
                         importLogger.addError("BPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
                     }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                } catch (Exception ex) {                    
                     con.rollback();
-                    importLogger.addError("error upading BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
+                    importLogger.addError("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
                     logger.error("error writing BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
@@ -228,7 +227,7 @@ public class BPlanImporter {
         int httpCode01 = client.executeMethod(get01);
         if (httpCode01!=200) {
             logger.error(get01.getResponseBodyAsString());
-            throw new Exception("Validierung konnte nicht durchgeführt werden.");
+            throw new Exception("Validierung konnte nicht durchgeführt werden. URL zur Validierung: \""+sb+"\"");
         }        
         get01.releaseConnection();        
         sb = new StringBuilder(kvwmapUrl);
@@ -242,15 +241,15 @@ public class BPlanImporter {
         int httpCode02 = client.executeMethod(get02);
         if (httpCode02!=200) {
             logger.error(get02.getResponseBodyAsString());
-            throw new Exception("Die Validierungsergebnisse konnten nicht abgerufen werden.");
+            throw new Exception("Die Validierungsergebnisse konnten nicht abgerufen werden. UEL: \""+sb+"\"");
         }
         ObjectReader objectReader = new ObjectMapper().reader();
         String json = get02.getResponseBodyAsString();
-        System.out.println(json);
+        logger.info(json);
         JsonNode node = objectReader.readValue(json, JsonNode.class);
         
         if (node.isArray()) {
-            System.out.println(node.size());
+//            System.out.println(node.size());
             for (int i=0; i<node.size() && succedded; i++) {
                 JsonNode n = node.get(i);
                 succedded = "Erfolg".equals(n.get("ergebnis_status").asText());               
@@ -520,8 +519,9 @@ public class BPlanImporter {
 
     private static void sendErrors(List<String> errors, EMailSender eMailSender, String string) {
         StringBuilder sb = new StringBuilder();
+        sb.append("Beim Importieren von BPlänen sind Fehler aufgetreten\n");
         for (int i=0; i<errors.size(); i++) {
-            sb.append(errors.get(i));
+            sb.append("<br><br>").append(errors.get(i));
         }
         try {
             eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen", "ralf.trier@gdi-service.de");

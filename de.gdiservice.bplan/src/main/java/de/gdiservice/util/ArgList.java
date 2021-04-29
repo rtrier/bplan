@@ -1,5 +1,7 @@
 package de.gdiservice.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +18,10 @@ public class ArgList {
 				}
 			}
 		}
+	}
+	
+	public Collection<String> getArgNames() {
+	    return new ArrayList<>(argMap.keySet());
 	}
 	
 	public String get(String argName) {

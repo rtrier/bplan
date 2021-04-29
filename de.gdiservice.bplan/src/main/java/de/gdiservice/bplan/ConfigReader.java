@@ -9,11 +9,16 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.gdiservice.util.DBUtil;
 
 public class ConfigReader {
 
 
+    final static Logger logger = LoggerFactory.getLogger(ConfigReader.class);
+    
     public static ImportConfigEntry readConfig(Connection con, String table, int id) throws SQLException {
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -116,7 +121,7 @@ public class ConfigReader {
     }
 
     public static List<JobEntry> readJobs(Connection con, String table) throws SQLException {
-
+        
         Statement stmt = null;
         ResultSet rs = null;
 
@@ -134,15 +139,14 @@ public class ConfigReader {
         try {    
             stmt = con.createStatement();
             rs = stmt.executeQuery(sql);
-            while (rs.next()) {
+            while (rs.next()) {                
                 JobEntry entry = new JobEntry();
                 for (int i=0, count=ATTNAMES.length; i<count; i++) {
                     set(entry, ATTNAMES[i], rs.getObject(i+1));
                 }
+                logger.info("new Entry {} {}", entry.jobId, entry.onlineresource);
                 list.add(entry);
             }
-
-
         }
         finally {
             if (rs!=null) {
