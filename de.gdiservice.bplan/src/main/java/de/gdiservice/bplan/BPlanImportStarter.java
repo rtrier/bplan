@@ -229,6 +229,10 @@ public class BPlanImportStarter {
 
 
             File f = new File(pgpass);
+            if (!f.canRead()) {
+                System.out.println("Can not run: file .pgpass not found.");
+                System.exit(1);
+            }
 
             DBConnectionParameter dbParam = DBUtil.getConnectionParameter(f, dburl);
             BPlanImportStarter starter = new BPlanImportStarter(dbParam, cronExpr, emailCredential, kvwmapUrl, kvwmapUserName, kvwmapPassword);

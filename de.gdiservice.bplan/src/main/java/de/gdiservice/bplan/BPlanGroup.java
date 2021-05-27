@@ -13,6 +13,14 @@ public class BPlanGroup {
     
    
     
+    /**
+     * Zerlegt der BPlan in Versionen durch Auswertung des Rreferenznamens.
+     * z.B. "amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf",
+     * Die 3. Stelle der Nummerierung wird als Version angenommen  
+     * 
+     * @param orgPlan
+     * @return
+     */
     public static List<BPlan> split(BPlan orgPlan) {
         
         List<BPlanIndexed> plans = new ArrayList<>();       

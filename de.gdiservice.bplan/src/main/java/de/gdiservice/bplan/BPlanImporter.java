@@ -1,6 +1,9 @@
 package de.gdiservice.bplan;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -70,7 +73,7 @@ public class BPlanImporter {
         test = isTest;
     }
 
-    public void updateBPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException {
+    public void updateBPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException  {
         boolean autoCommit = con.getAutoCommit();
         if (autoCommit) {
             con.setAutoCommit(false);
@@ -80,9 +83,11 @@ public class BPlanImporter {
             BPlanDAO bplanDao = new BPlanDAO(con, bplanTable);
             KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
 
-            for (BPlan plan : bPlans) {
-                
+            for (BPlan plan : bPlans) {                
                 try {
+                    if (!isStelleResponsible(entry.stelle_id, plan)) {
+                        throw new IllegalAccessException("Stelle mit Id \""+entry.stelle_id+"\" ist nicht für die Gemeinde " + Arrays.toString(plan.getGemeinde()) + " zuständig");
+                    }
                     List<BPlan> teilPlaene = BPlanGroup.split(plan);
 
                     String geomValidierungsResult = bplanDao.validateGeom(plan.getGeom());
@@ -203,7 +208,26 @@ public class BPlanImporter {
         }
     }
     
-    public static String  parseUrl(String s) throws Exception {
+    /**
+     * Prüft, ob die Stelle mit der stellenId für die Gemeinde zuständig ist.
+     *  
+     * @param stelle_id
+     * @param plan
+     * @return
+     */
+    private boolean isStelleResponsible(Integer stelle_id, BPlan plan) {
+        de.gdiservice.bplan.Gemeinde[] gemeinden = plan.getGemeinde();
+        if (gemeinden!=null) {
+            for (de.gdiservice.bplan.Gemeinde gemeinde : gemeinden) {
+                if (gemeinde.rs.startsWith(String.valueOf(stelle_id))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static String  parseUrl(String s) throws MalformedURLException, URISyntaxException  {
         URL u = new URL(s);
         return new URI(
                u.getProtocol(), 
@@ -214,59 +238,74 @@ public class BPlanImporter {
                toURL().toExternalForm();
    }
     
-    public boolean validate(Konvertierung konvertierung, BPlan bplan, String kvwmapUrl, ImportLogger importLogger) throws Exception {
+    public boolean validate(Konvertierung konvertierung, BPlan bplan, String kvwmapUrl, ImportLogger importLogger) throws ValidationException {
         
-        boolean succedded = true; 
-        
-        StringBuilder sb = new StringBuilder(kvwmapUrl);                
-        sb.append("?go=xplankonverter_konvertierung");
-        sb.append("&konvertierung_id=").append(bplan.getKonvertierungId());
-        sb.append("&login_name=").append(this.kvwmapLoginName);
-        sb.append("&passwort=").append(this.kvwmapPassword);
-        sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
-        
-        String s = parseUrl(sb.toString());        
-        HttpClient client = new HttpClient();
-        GetMethod get01 = new GetMethod(s);
-        int httpCode01 = client.executeMethod(get01);
-        if (httpCode01!=200) {
-            logger.error(get01.getResponseBodyAsString());
-            throw new Exception("Validierung konnte nicht durchgeführt werden. URL zur Validierung: \""+sb+"\"");
-        }        
-        get01.releaseConnection();        
-        sb = new StringBuilder(kvwmapUrl);
-        sb.append("?go=Layer-Suche_Suchen");
-        sb.append("&selected_layer_id=18");
-        sb.append("&operator_konvertierung_id==");
-        sb.append("&value_konvertierung_id=").append(bplan.getKonvertierungId());
-        sb.append("&mime_type=formatter");
-        sb.append("&format=json");
-        GetMethod get02 = new GetMethod(sb.toString());
-        int httpCode02 = client.executeMethod(get02);
-        if (httpCode02!=200) {
-            logger.error(get02.getResponseBodyAsString());
-            throw new Exception("Die Validierungsergebnisse konnten nicht abgerufen werden. UEL: \""+sb+"\"");
-        }
-        ObjectReader objectReader = new ObjectMapper().reader();
-        String json = get02.getResponseBodyAsString();
-        logger.info(json);
-        JsonNode node = objectReader.readValue(json, JsonNode.class);
-        
-        if (node.isArray()) {
-//            System.out.println(node.size());
-            for (int i=0; i<node.size() && succedded; i++) {
-                JsonNode n = node.get(i);
-                succedded = "Erfolg".equals(n.get("ergebnis_status").asText());               
+        try {
+            boolean succedded = true; 
+            
+            StringBuilder sb = new StringBuilder(kvwmapUrl);                
+            sb.append("?go=xplankonverter_konvertierung");
+            sb.append("&konvertierung_id=").append(bplan.getKonvertierungId());
+            sb.append("&login_name=").append(this.kvwmapLoginName);
+            sb.append("&passwort=").append(this.kvwmapPassword);
+            sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
+            
+            String s;
+            try {
+                s = parseUrl(sb.toString());
+            } catch (MalformedURLException | URISyntaxException ex) {
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. URL nicht interpretierbar: \""+sb+"\"", ex);
+            }        
+            HttpClient client = new HttpClient();
+            GetMethod get01 = new GetMethod(s);
+            int httpCode01 = client.executeMethod(get01);
+            if (httpCode01!=200) {
+                logger.error(get01.getResponseBodyAsString());
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. URL zur Validierung: \""+sb+"\"", null);
+            }        
+            get01.releaseConnection();        
+            sb = new StringBuilder(kvwmapUrl);
+            sb.append("?go=Layer-Suche_Suchen");
+            sb.append("&selected_layer_id=18");
+            sb.append("&operator_konvertierung_id==");
+            sb.append("&value_konvertierung_id=").append(bplan.getKonvertierungId());
+            sb.append("&mime_type=formatter");
+            sb.append("&format=json");
+            GetMethod get02 = new GetMethod(sb.toString());
+            int httpCode02 = client.executeMethod(get02);
+            if (httpCode02!=200) {
+                logger.error(get02.getResponseBodyAsString());
+                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. UEL: \""+sb+"\"", null);
             }
-        }
-        get02.releaseConnection();
+            ObjectReader objectReader = new ObjectMapper().reader();
+            String json = get02.getResponseBodyAsString();
+            logger.info(json);
+            try {
+                JsonNode node = objectReader.readValue(json, JsonNode.class);
+                
+                if (node.isArray()) {
+//            System.out.println(node.size());
+                    for (int i=0; i<node.size() && succedded; i++) {
+                        JsonNode n = node.get(i);
+                        succedded = "Erfolg".equals(n.get("ergebnis_status").asText());               
+                    }
+                }
+            } catch (IOException e) {
+               throw new ValidationException("Das Valisierungsergebnis konnte nicht interpretiert werden. Response:\""+json+"\"", e);
+            }
+            get02.releaseConnection();
 
-        if (succedded) {
-            importLogger.addLine(String.format("validated %s", bplan.getGml_id())); 
-        } else {
-            importLogger.addLine(String.format("Validierung war nicht erfolgreich %s", bplan.getGml_id())); 
+            if (succedded) {
+                importLogger.addLine(String.format("validated %s", bplan.getGml_id())); 
+            } else {
+                importLogger.addLine(String.format("Validierung war nicht erfolgreich %s", bplan.getGml_id())); 
+            }
+            return succedded;
+        } catch (IOException ex) {
+            throw new ValidationException("Fehler bei Validierung durch den Backend.", ex);
+        } catch (RuntimeException ex) {
+            throw new ValidationException("unspezifischer Fehler bei Validierung.", ex);
         }
-        return succedded;
     }
 
     public void importWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
@@ -484,7 +523,7 @@ public class BPlanImporter {
                 logDAO.insert(logger.getTime(), logger.getText());
                 List<String> errors = logger.getErrors();
                 if (errors!=null && errors.size()>0) {
-                    sendErrors(errors, eMailSender, "ralf.trier@gdi-service.de");
+                    sendErrors(errors, eMailSender, entry);
                 }
                 if (entry instanceof JobEntry) {
                     ConfigReader.setJobFinished(con, (JobEntry)entry);
@@ -511,7 +550,7 @@ public class BPlanImporter {
             }
         } 
         catch (Exception ex) {
-            throw new IllegalArgumentException("DB-Verbinung konnte nicht hergestellt werden.");
+            throw new IllegalArgumentException("DB-Verbinung konnte nicht hergestellt werden.", ex);
         } finally {
             if (con!=null) {
                 try {
@@ -521,21 +560,38 @@ public class BPlanImporter {
         }
     }
 
-    private static void sendErrors(List<String> errors, EMailSender eMailSender, String string) {
+    private static void sendErrors(List<String> errors, EMailSender eMailSender, ImportConfigEntry entry) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Beim Importieren von BPlänen sind Fehler aufgetreten\n");
+        sb.append("Sehr geehrte Damen und Herren,<br>");
+        sb.append("beim Importieren von BPlänen sind Fehler aufgetreten\n");
         for (int i=0; i<errors.size(); i++) {
             sb.append("<br><br>").append(errors.get(i));
         }
+        sb.append("<br><br>");
+        sb.append("Bei Fragen wenden Sie sich bitte an Herrn Trier<br>");
+        sb.append("ralf.trier@gdi-service.de<br>");
+        sb.append("Tel: 0381 87397363");
+        
         try {
-            eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen", "ralf.trier@gdi-service.de");
-        } catch (Exception ex) {
+            String bezeichng = entry.bezeichnung==null ? entry.onlineresource : String.valueOf(entry.bezeichnung);
+            eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen - " + bezeichng, "ralf.trier@gdi-service.de");
+            if ( entry.email != null && entry.email.contains("@") ) {
+                eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen", entry.email);
+            }
+        } catch (Throwable ex) {
            logger.error("Fehler beim Versenden der eMail", ex);
         }
         
     }    
 
+    static class ValidationException extends Exception {
 
+        private static final long serialVersionUID = 1L;
+
+        public ValidationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
 
 
 

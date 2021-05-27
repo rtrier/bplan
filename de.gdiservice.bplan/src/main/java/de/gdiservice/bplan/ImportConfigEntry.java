@@ -3,14 +3,15 @@ package de.gdiservice.bplan;
 public class ImportConfigEntry {
   
   public static final String[] ATTNAMES = new String[] {
-      "id", "bezeichnung", "onlineresource", "featuretype", "stelle_id", "created_at", "created_from", "updated_at", "updated_from", "version"
+      "id", "bezeichnung", "onlineresource", "featuretype", "email", "stelle_id", "created_at", "created_from", "updated_at", "updated_from", "version"
   };
   
   public Object id;
   public Object bezeichnung;
   public String onlineresource;
   public Object featuretype;
-  public Object stelle_id;
+  public String email; 
+  public Integer stelle_id;
   public Object created_at;
   public Object created_from;
   public Object updated_at;
