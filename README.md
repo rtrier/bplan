@@ -1,4 +1,4 @@
-# Importiert BPläne aus WFS-Diensten
+# Importiert B-Pläne aus WFS-Diensten
 
 Anwendung erweitert [KVWMAP](https://kvwmap.de/).
 
