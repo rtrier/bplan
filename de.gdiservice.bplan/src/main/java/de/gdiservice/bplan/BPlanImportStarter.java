@@ -108,8 +108,6 @@ public class BPlanImportStarter {
     public void start() throws SchedulerException {
         System.out.println("start cronExpression=\"" + this.cronExpr +"\"");
         
-        
-        
         this.scheduler = StdSchedulerFactory.getDefaultScheduler();
         
         Runtime.getRuntime().addShutdownHook(new ShutdownThread());
@@ -181,6 +179,7 @@ public class BPlanImportStarter {
 
 
     public static void main(String[] args) {
+        System.out.println("BPlanImporter wird gestartet..");
         try {            
             ArgList argList = new ArgList(args);
             
