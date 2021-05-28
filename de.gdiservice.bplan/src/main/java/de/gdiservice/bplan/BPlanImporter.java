@@ -247,8 +247,9 @@ public class BPlanImporter {
             sb.append("?go=xplankonverter_konvertierung");
             sb.append("&konvertierung_id=").append(bplan.getKonvertierungId());
             sb.append("&login_name=").append(this.kvwmapLoginName);
-            sb.append("&passwort=").append(this.kvwmapPassword);
             sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
+            sb.append("&passwort=").append(this.kvwmapPassword);
+           
             
             String s;
             try {
@@ -261,7 +262,8 @@ public class BPlanImporter {
             int httpCode01 = client.executeMethod(get01);
             if (httpCode01!=200) {
                 logger.error(get01.getResponseBodyAsString());
-                throw new ValidationException("Validierung konnte nicht durchgeführt werden. URL zur Validierung: \""+sb+"\"", null);
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + "URL: \""+kvwmapUrl+"\". Antort des Servers:\""+
+                        get01.getResponseBodyAsString() + "\"", null);
             }        
             get01.releaseConnection();        
             sb = new StringBuilder(kvwmapUrl);
@@ -275,7 +277,8 @@ public class BPlanImporter {
             int httpCode02 = client.executeMethod(get02);
             if (httpCode02!=200) {
                 logger.error(get02.getResponseBodyAsString());
-                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. UEL: \""+sb+"\"", null);
+                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + "URL: \""+kvwmapUrl+"\". Antort des Servers:\""+
+                        get01.getResponseBodyAsString() + "\"", null);
             }
             ObjectReader objectReader = new ObjectMapper().reader();
             String json = get02.getResponseBodyAsString();
