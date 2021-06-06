@@ -33,7 +33,9 @@ public class BPlanGroup {
         for (int i=0; i<pgExterneReferenzs.length; i++) {
             ExterneRef er = pgExterneReferenzs[i].getExterneRef();
             String refName = er.referenzname;
-            
+            if (refName == null) {
+                throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ExterneReferenz ohne ReferenzName ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
+            }
             
             Matcher m = p.matcher(refName);
             if (m.find() && m.groupCount()==3) {
@@ -48,7 +50,7 @@ public class BPlanGroup {
                 
             }
             else {
-                throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
+                throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ReferenzName entspricht nicht dem Muster ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
             }
         }
         
