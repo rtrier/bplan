@@ -42,7 +42,7 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
 
     @Override
     public String getValue() {		
-        final String v = "(" + this.ags + "," + this.rs + "," + this.gemeindename + "," + this.ortsteilname+ ")"; 
+        final String v = "(" + this.ags + "," + this.rs + ",\"" + this.gemeindename + "\", \"" + this.ortsteilname+ "\")"; 
         return v;
     }	
 
