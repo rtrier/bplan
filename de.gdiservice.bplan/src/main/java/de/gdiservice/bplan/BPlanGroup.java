@@ -44,7 +44,7 @@ public class BPlanGroup {
                 version = Integer.parseInt(m.group(2));
             } else  {
                 Matcher m2 = p2stellig.matcher(refName);
-                if (m2.find() && m.groupCount()==2) {
+                if (m2.find() && m2.groupCount()==2) {
                     version = Integer.parseInt(m.group(2));
                 }
             }
