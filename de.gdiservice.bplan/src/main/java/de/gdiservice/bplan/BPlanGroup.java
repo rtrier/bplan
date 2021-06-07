@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 
 public class BPlanGroup {
     
-    final static Pattern p = Pattern.compile("(\\d+)_(\\d+)_(\\d+)\\.");
+    final static Pattern p3stellig = Pattern.compile("(\\d+)_(\\d+)_(\\d+)\\.");
+    final static Pattern p2stellig = Pattern.compile("(\\d+)_(\\d+)\\.");
     
    
     
@@ -37,21 +38,27 @@ public class BPlanGroup {
                 throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ExterneReferenz ohne ReferenzName ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
             }
             
-            Matcher m = p.matcher(refName);
+            Matcher m = p3stellig.matcher(refName);
+            int version = -1;
             if (m.find() && m.groupCount()==3) {
-                int version = Integer.parseInt(m.group(2));
-                // System.out.println(orgPlan.getGml_id()+"  "+refName+"  "+idx+" "+version);
-                if (idx!=version) {
-                    idx = version;
-                    nPlan = new BPlanIndexed(clone(orgPlan), idx);
-                    plans.add(nPlan);
+                version = Integer.parseInt(m.group(2));
+            } else  {
+                Matcher m2 = p2stellig.matcher(refName);
+                if (m2.find() && m.groupCount()==2) {
+                    version = Integer.parseInt(m.group(2));
                 }
-                nPlan.plan.addExterneReferenz(pgExterneReferenzs[i]);
-                
             }
-            else {
+            if (version<0) {
                 throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ReferenzName entspricht nicht dem Muster ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
             }
+                // System.out.println(orgPlan.getGml_id()+"  "+refName+"  "+idx+" "+version);
+            if (idx!=version) {
+                idx = version;
+                nPlan = new BPlanIndexed(clone(orgPlan), idx);
+                plans.add(nPlan);
+            }
+            nPlan.plan.addExterneReferenz(pgExterneReferenzs[i]);
+            
         }
         
         Collections.sort(plans, new Comparator<BPlanIndexed>() {

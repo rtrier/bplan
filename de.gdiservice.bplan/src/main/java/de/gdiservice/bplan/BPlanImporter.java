@@ -72,6 +72,16 @@ public class BPlanImporter {
     public void setTest(boolean isTest) {
         test = isTest;
     }
+    
+//    private boolean splitPlan(BPlan plan) {
+//        String[] planArten = plan.getPlanart();
+//        for (String s : planArten) {
+//            if (planArten[0].charAt(0)=='1' ||  planArten[0].charAt(0)=='3') {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     public void updateBPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException  {
         boolean autoCommit = con.getAutoCommit();
@@ -88,6 +98,8 @@ public class BPlanImporter {
                     if (!isStelleResponsible(entry.stelle_id, plan)) {
                         throw new IllegalAccessException("Stelle mit Id \""+entry.stelle_id+"\" ist nicht für die Gemeinde " + Arrays.toString(plan.getGemeinde()) + " zuständig");
                     }
+                    
+                    // List<BPlan> teilPlaene = splitPlan(plan) ? BPlanGroup.split(plan) : Collections.singletonList(plan);
                     List<BPlan> teilPlaene = BPlanGroup.split(plan);
 
                     String geomValidierungsResult = bplanDao.validateGeom(plan.getGeom());
@@ -129,7 +141,7 @@ public class BPlanImporter {
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
                                     throw new IllegalArgumentException("Gemeinde "+gemeinde+" vom WFS ist nicht in der DB hinterlegt.");
-                                }
+                                }       
     
                                 konvertierung = new Konvertierung();
                                 konvertierung.stelle_id = kvGemeinden.get(0).stelle_id;
