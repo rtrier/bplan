@@ -149,7 +149,7 @@ public class BPlanImporter {
                                 konvertierung.user_id = 1;
                                 konvertierung.gebietseinheiten = gemeinde.getRs();
                                 konvertierung.bezeichnung = teilPlan.getName()+" "+gemeinde.getGemeindename()+" "+teilPlan.getNummer();
-                                konvertierung.veroeffentlicht = true;
+                                konvertierung.veroeffentlicht = false;
                                 konvertierung.beschreibung = "automatically created from wfs-fietz";
                                 Integer iPlanArt = null;
     
@@ -189,7 +189,9 @@ public class BPlanImporter {
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     bplanDao.update(teilPlan);
                                     konvertierungDAO.update(teilPlan.konvertierung_id);
+                                    konvertierungDAO.updatePublishFlag(teilPlan.konvertierung_id, false);
                                     konvertierung = konvertierungDAO.find(teilPlan.konvertierung_id); 
+                                    
                                     logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
                                     con.commit();
@@ -209,7 +211,12 @@ public class BPlanImporter {
                         importLogger.addError("BPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
                     }
                 } catch (Exception ex) {                    
-                    con.rollback();
+                    try {
+                        con.rollback();
+                    } 
+                    catch (SQLException e) {
+                        logger.error("rollback Error", e);
+                    }
                     importLogger.addError("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
                     logger.error("error writing BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
