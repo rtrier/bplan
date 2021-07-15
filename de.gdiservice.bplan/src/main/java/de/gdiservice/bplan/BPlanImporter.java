@@ -542,7 +542,7 @@ public class BPlanImporter {
                 }
                 ImportLogger logger = new ImportLogger();
                 bplImport.importWFS(con, entry, logger);
-                logDAO.insert(logger.getTime(), logger.getText());
+                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 List<String> errors = logger.getErrors();
                 if (errors!=null && errors.size()>0) {
                     sendErrors(errors, eMailSender, entry);

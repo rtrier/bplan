@@ -15,7 +15,7 @@ public class LogDAO {
     final static Logger logger = LoggerFactory.getLogger(LogDAO.class);
 
     final static String[] COLLUMN_NAMES = new String[] {
-            "time","protocol"
+            "time", "stelle_id", "protocol"
     };
 
 
@@ -23,13 +23,13 @@ public class LogDAO {
     private final String tableName;
 
     public LogDAO(Connection con, String tableName) {
-        this.con = con;
+        this.con = con;        
         this.tableName = tableName;
     }
 
 
 
-    public void insert(OffsetDateTime time, String text) throws SQLException {
+    public void insert(OffsetDateTime time, int stellenId, String text) throws SQLException {
         
         PreparedStatement stmt = null;
 
@@ -40,6 +40,7 @@ public class LogDAO {
             int i = 1;
 
             stmt.setObject(i++, time);
+            stmt.setInt(i++, stellenId);
             stmt.setString(i++, text);
             logger.debug("{}", stmt);
             try {
