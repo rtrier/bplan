@@ -535,14 +535,16 @@ public class BPlanImporter {
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
-            for (int i = 0; i < importConfigEntries.size(); i++) {
+            for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);
+                System.err.println("StellenId: \""+entry.stelle_id+"\"");
                 if (entry instanceof JobEntry) {
                     ConfigReader.setJobStarted(con, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
                 bplImport.importWFS(con, entry, logger);
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+                
                 List<String> errors = logger.getErrors();
                 if (errors!=null && errors.size()>0) {
                     sendErrors(errors, eMailSender, entry);

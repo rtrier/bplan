@@ -42,7 +42,7 @@ public class LogDAO {
             stmt.setObject(i++, time);
             stmt.setInt(i++, stellenId);
             stmt.setString(i++, text);
-            logger.debug("{}", stmt);
+            logger.error("insertLog {}", stmt);
             try {
                 stmt.execute();
             }
