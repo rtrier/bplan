@@ -218,7 +218,7 @@ public class BPlanImporter {
                         logger.error("rollback Error", e);
                     }
                     importLogger.addError("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
-                    logger.error("error writing BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
+                    logger.error("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
         }
@@ -281,7 +281,7 @@ public class BPlanImporter {
             int httpCode01 = client.executeMethod(get01);
             if (httpCode01!=200) {
                 logger.error(get01.getResponseBodyAsString());
-                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + "URL: \""+kvwmapUrl+"\". Antort des Servers:\""+
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
                         get01.getResponseBodyAsString() + "\"", null);
             }        
             get01.releaseConnection();        
@@ -296,7 +296,7 @@ public class BPlanImporter {
             int httpCode02 = client.executeMethod(get02);
             if (httpCode02!=200) {
                 logger.error(get02.getResponseBodyAsString());
-                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + "URL: \""+kvwmapUrl+"\". Antort des Servers:\""+
+                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
                         get01.getResponseBodyAsString() + "\"", null);
             }
             ObjectReader objectReader = new ObjectMapper().reader();
