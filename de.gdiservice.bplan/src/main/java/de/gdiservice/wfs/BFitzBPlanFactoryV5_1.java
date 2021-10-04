@@ -34,8 +34,12 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
 
         final BPlan bplan = new BPlan();
 
-        bplan.setId(f.getID());
+        bplan.setId(f.getID());        
         bplan.setName ( (String) f.getAttribute("name"));
+        String gml_id = (String) f.getAttribute("gml_id");
+        if (gml_id==null) {
+            throw new IllegalArgumentException("gml_id is not set");
+        }        
         bplan.setGml_id( (String) f.getAttribute("gml_id")); //"67db195e-9203-4856-9bc9-8ea491153652"
         bplan.setNummer( (String) f.getAttribute("nummer")); //"3.1, 1. Änderung"
         bplan.setPlanart( getPlanArten((String)f.getAttribute("planart"))); // "{10001}"

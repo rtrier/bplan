@@ -337,7 +337,7 @@ public class BPlanImporter {
         try {
             final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
-            bPlans = WFSClient.read(wfsUrl, wfsFactory);
+            bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
         } 
         catch (Exception ex) {
             logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);

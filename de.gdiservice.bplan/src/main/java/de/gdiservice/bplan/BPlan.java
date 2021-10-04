@@ -76,7 +76,11 @@ public class BPlan {
         return gml_id;
     }
     public void setGml_id(String gml_id) {
-        this.gml_id = UUID.fromString(gml_id);
+        try {
+            this.gml_id = UUID.fromString(gml_id);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("gml_id \""+gml_id+"\" is not a UID");
+        }
     }
     public void setGml_id(UUID gml_id) {
         this.gml_id = gml_id;

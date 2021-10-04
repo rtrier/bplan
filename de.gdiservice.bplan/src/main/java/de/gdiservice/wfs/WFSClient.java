@@ -1,5 +1,6 @@
 package de.gdiservice.wfs;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -13,12 +14,14 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.gdiservice.bplan.ImportLogger;
+
 
 public class WFSClient {
 
     final static Logger logger = LoggerFactory.getLogger(WFSClient.class);
 
-    public static <T> List<T> read(String sUrl, WFSFactory<T> factory) throws Exception {
+    public static <T> List<T> read(String sUrl, WFSFactory<T> factory, ImportLogger importLogger) throws Exception {
         
         logger.info(String.format("WFSClient reading \"%s\"", sUrl));
 
@@ -36,8 +39,25 @@ public class WFSClient {
         FeatureIterator<?> it = features.features();
 
         while (it.hasNext()) {
-            SimpleFeature f = (SimpleFeature) it.next();
-            list.add(factory.build(f));
+            final Object o = it.next();
+            if (o instanceof SimpleFeature) {
+                SimpleFeature f = (SimpleFeature) o;
+                try {
+                    list.add(factory.build(f));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    if (importLogger!=null) {
+                        importLogger.addError("SimpleFeature has an error: "+e.getMessage());
+                    }
+                }
+            } else {
+                if (importLogger!=null) {
+                    importLogger.addError("Object is not a SimpleFeature");
+                }
+                else {
+                    System.err.println("Object is not a SimpleFeature");
+                }
+            }
         }
         return list;
 
