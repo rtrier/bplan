@@ -9,7 +9,7 @@ public class ImportConfigEntry {
   public Object id;
   public Object bezeichnung;
   public String onlineresource;
-  public Object featuretype;
+  public String featuretype;
   public String email; 
   public Integer stelle_id;
   public Object created_at;

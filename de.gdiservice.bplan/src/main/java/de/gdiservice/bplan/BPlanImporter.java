@@ -335,7 +335,7 @@ public class BPlanImporter {
         List<BPlan> bPlans = null;
 
         try {
-            final String wfsUrl = entry.onlineresource + "?service=WFS&version=1.1.0&request=GetFeature&typename=B_Plan&srsname=epsg:25833";
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
             bPlans = WFSClient.read(wfsUrl, wfsFactory);
         } 

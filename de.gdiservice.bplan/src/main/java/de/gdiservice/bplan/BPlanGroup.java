@@ -24,52 +24,56 @@ public class BPlanGroup {
      */
     public static List<BPlan> split(BPlan orgPlan) {
         
-        List<BPlanIndexed> plans = new ArrayList<>();       
+        List<BPlanIndexed> plans = new ArrayList<>();
+        List<BPlan> result;
         
         PGExterneReferenz[] pgExterneReferenzs = orgPlan.getExternereferenzes();
         
         int idx = -1;
         BPlanIndexed nPlan = null;
-        
-        for (int i=0; i<pgExterneReferenzs.length; i++) {
-            ExterneRef er = pgExterneReferenzs[i].getExterneRef();
-            String refName = er.referenzname;
-            if (refName == null) {
-                throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ExterneReferenz ohne ReferenzName ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
-            }
-            
-            Matcher m = p3stellig.matcher(refName);
-            int version = -1;
-            if (m.find() && m.groupCount()==3) {
-                version = Integer.parseInt(m.group(2));
-            } else  {
-                Matcher m2 = p2stellig.matcher(refName);
-                if (m2.find() && m2.groupCount()==2) {
-                    version = Integer.parseInt(m2.group(2));
+        if (pgExterneReferenzs!=null && pgExterneReferenzs.length>0) {
+            for (int i=0; i<pgExterneReferenzs.length; i++) {
+                ExterneRef er = pgExterneReferenzs[i].getExterneRef();
+                String refName = er.referenzname;
+                if (refName == null) {
+                    throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ExterneReferenz ohne ReferenzName ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
                 }
+                
+                Matcher m = p3stellig.matcher(refName);
+                int version = -1;
+                if (m.find() && m.groupCount()==3) {
+                    version = Integer.parseInt(m.group(2));
+                } else  {
+                    Matcher m2 = p2stellig.matcher(refName);
+                    if (m2.find() && m2.groupCount()==2) {
+                        version = Integer.parseInt(m2.group(2));
+                    }
+                }
+                if (version<0) {
+                    throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ReferenzName entspricht nicht dem Muster ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
+                }
+                    // System.out.println(orgPlan.getGml_id()+"  "+refName+"  "+idx+" "+version);
+                if (idx!=version) {
+                    idx = version;
+                    nPlan = new BPlanIndexed(clone(orgPlan), idx);
+                    plans.add(nPlan);
+                }
+                nPlan.plan.addExterneReferenz(pgExterneReferenzs[i]);
+                
             }
-            if (version<0) {
-                throw new IllegalArgumentException("Fehler beim Aufteilen des BPlans, ReferenzName entspricht nicht dem Muster ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
-            }
-                // System.out.println(orgPlan.getGml_id()+"  "+refName+"  "+idx+" "+version);
-            if (idx!=version) {
-                idx = version;
-                nPlan = new BPlanIndexed(clone(orgPlan), idx);
-                plans.add(nPlan);
-            }
-            nPlan.plan.addExterneReferenz(pgExterneReferenzs[i]);
-            
-        }
         
-        Collections.sort(plans, new Comparator<BPlanIndexed>() {
-            @Override
-            public int compare(BPlanIndexed o1, BPlanIndexed o2) {
-                return Integer.compare(o1.idx, o2.idx);
-            };
-        });
-        ArrayList<BPlan> result = new ArrayList<>(plans.size());
-        for (int i=0; i<plans.size(); i++) {
-            result.add(plans.get(i).plan);
+            Collections.sort(plans, new Comparator<BPlanIndexed>() {
+                @Override
+                public int compare(BPlanIndexed o1, BPlanIndexed o2) {
+                    return Integer.compare(o1.idx, o2.idx);
+                };
+            });
+            result = new ArrayList<>(plans.size());
+            for (int i=0; i<plans.size(); i++) {
+                result.add(plans.get(i).plan);
+            }
+        } else {
+            result = Collections.singletonList(orgPlan);
         }
         return result;
         
