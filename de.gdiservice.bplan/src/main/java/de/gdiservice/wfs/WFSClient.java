@@ -44,10 +44,11 @@ public class WFSClient {
                 SimpleFeature f = (SimpleFeature) o;
                 try {
                     list.add(factory.build(f));
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                     if (importLogger!=null) {
-                        importLogger.addError("SimpleFeature has an error: "+e.getMessage());
+                        Object name = f.getAttribute("name");
+                        importLogger.addError("SimpleFeature \"" + name + "\" has an error: "+e.getMessage());
                     }
                 }
             } else {
