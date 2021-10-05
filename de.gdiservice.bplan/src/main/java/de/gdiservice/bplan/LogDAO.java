@@ -42,11 +42,13 @@ public class LogDAO {
             stmt.setObject(i++, time);
             stmt.setInt(i++, stellenId);
             stmt.setString(i++, text);
-            logger.error("insertLog {}", stmt);
+            logger.info("insertLog {}", text);
+            logger.info("insertLog {}", stmt);
             try {
                 stmt.execute();
             }
             catch (SQLException ex) {
+                ex.printStackTrace();
                 throw ex;
             }
         }
