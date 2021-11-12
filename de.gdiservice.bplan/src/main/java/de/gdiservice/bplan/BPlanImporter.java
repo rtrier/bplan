@@ -451,11 +451,11 @@ public class BPlanImporter {
 
 
         if (hasChanged(plan01.gemeinde, plan02.gemeinde)) {
-            String.format("<>gemeinde %s &s", plan01.gemeinde, plan02.gemeinde);
+            logger.info(String.format("<>gemeinde %s &s", plan01.gemeinde, plan02.gemeinde));
             return true;
         }
         if (hasChanged(plan01.getExternereferenzes(), plan02.getExternereferenzes())) {
-            String.format("<>Externereferenzes %s &s", plan01.getExternereferenzes(), plan02.getExternereferenzes());
+            logger.info(String.format("<>Externereferenzes %s &s", plan01.getExternereferenzes(), plan02.getExternereferenzes()));
             return true;
         }
 
