@@ -121,7 +121,14 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
     }
     @Override
     public String toString() {
-        return getValue();
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        sb.append("ags=").append(ags);
+        sb.append("rs=").append(rs);
+        sb.append("gemeindename=").append(gemeindename);
+        sb.append("ortsteilname=").append(ortsteilname);
+        sb.append("]");
+        return getValue()+"  "+sb.toString();
     }
 
 

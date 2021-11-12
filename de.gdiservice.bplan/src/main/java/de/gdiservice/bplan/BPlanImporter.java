@@ -451,11 +451,11 @@ public class BPlanImporter {
 
 
         if (hasChanged(plan01.gemeinde, plan02.gemeinde)) {
-            logger.info(String.format("<>gemeinde %s &s", plan01.gemeinde, plan02.gemeinde));
+            logger.info(String.format("<>gemeinde %s %s", Arrays.toString(plan01.gemeinde), Arrays.toString(plan02.gemeinde)));
             return true;
         }
         if (hasChanged(plan01.getExternereferenzes(), plan02.getExternereferenzes())) {
-            logger.info(String.format("<>Externereferenzes %s &s", plan01.getExternereferenzes(), plan02.getExternereferenzes()));
+            logger.info(String.format("<>Externereferenzes %s %s", plan01.getExternereferenzes(), plan02.getExternereferenzes()));
             return true;
         }
 
@@ -463,40 +463,40 @@ public class BPlanImporter {
             throw new IllegalArgumentException("one Plan doesnt has a geometry");
         }
         if (!plan01.geom.equals(plan02.geom)) {
-            logger.info(String.format("<>geom %s &s", plan01.geom, plan02.geom));
+            logger.info(String.format("<>geom %s %s", plan01.geom, plan02.geom));
             return true;
         }
         if (hasChanged(plan01.inkrafttretensdatum, plan02.inkrafttretensdatum)) {
-            logger.info(String.format("<>inkrafttretensdatum %s &s", plan01.inkrafttretensdatum, plan02.inkrafttretensdatum));
+            logger.info(String.format("<>inkrafttretensdatum %s %s", plan01.inkrafttretensdatum, plan02.inkrafttretensdatum));
             return true;
         }
         if (hasChanged(plan01.name, plan02.name)) {
-            logger.info(String.format("<>name %s &s", plan01.name, plan02.name));
+            logger.info(String.format("<>name %s %s", plan01.name, plan02.name));
             return true;
         }
         if (hasChanged(plan01.nummer, plan02.nummer)) {
-            logger.info(String.format("<>nummer %s &s", plan01.nummer, plan02.nummer));
+            logger.info(String.format("<>nummer %s %s", plan01.nummer, plan02.nummer));
             return true;
         }
         if (!Arrays.equals(plan01.planart, plan02.planart)) {
-            logger.info(String.format("<>planart %s &s", plan01.planart, plan02.planart));
+            logger.info(String.format("<>planart %s %s", plan01.planart, plan02.planart));
             return true;
         }
         if (hasChanged(plan01.rechtsstand, plan02.rechtsstand)) {
-            logger.info(String.format("<>rechtsstand %s &s", plan01.rechtsstand, plan02.rechtsstand));
+            logger.info(String.format("<>rechtsstand %s %s", plan01.rechtsstand, plan02.rechtsstand));
             return true;
         }
         
         if (hasChanged(plan01.aendert, plan02.aendert)) {
-            logger.info(String.format("<>aendert %s &s", plan01.aendert, plan02.aendert));
+            logger.info(String.format("<>aendert %s %s", plan01.aendert, plan02.aendert));
             return true;
         }
         if (hasChanged(plan01.wurdegeaendertvon, plan02.wurdegeaendertvon)) {
-            logger.info(String.format("<>wurdegeaendertvon %s &s", plan01.wurdegeaendertvon, plan02.wurdegeaendertvon));
+            logger.info(String.format("<>wurdegeaendertvon %s %s", plan01.wurdegeaendertvon, plan02.wurdegeaendertvon));
             return true;
         }
         if (hasChanged(plan01.internalid, plan02.internalid)) {
-            logger.info(String.format("<>internalid %s &s", plan01.internalid, plan02.internalid));
+            logger.info(String.format("<>internalid %s %s", plan01.internalid, plan02.internalid));
             return true;
         }
         return false;
