@@ -183,8 +183,9 @@ public class BPlanImporter {
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     
                             } else {
-                                // update BPlan
+                                // update BPlan                                
                                 if (BPlanImporter.hasChanged(teilPlan, dbPlan)) {
+                                    
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     bplanDao.update(teilPlan);
@@ -445,13 +446,24 @@ public class BPlanImporter {
         }
         return false;
     }
+    
+    private static String toString(de.gdiservice.bplan.Gemeinde[] gemeinden) {
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<gemeinden.length; i++) {
+            sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
+            sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
+            sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
+            sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
+        }
+        return sb.toString();
+    }
 
     public static boolean hasChanged(BPlan plan01, BPlan plan02) {
 
 
 
         if (hasChanged(plan01.gemeinde, plan02.gemeinde)) {
-            logger.info(String.format("<>gemeinde %s %s", Arrays.toString(plan01.gemeinde), Arrays.toString(plan02.gemeinde)));
+            logger.info(String.format("<>gemeinde %s %s", toString(plan01.gemeinde), toString(plan02.gemeinde)));
             return true;
         }
         if (hasChanged(plan01.getExternereferenzes(), plan02.getExternereferenzes())) {
