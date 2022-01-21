@@ -46,14 +46,30 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
         bplan.setRechtsstand((String) f.getAttribute("rechtsstand")); //="4000"
 
         String sDate = (String) f.getAttribute("inkrafttretensdatum");
-        if (sDate!=null) {
+        if (sDate!=null && sDate.trim().length()>0) {
             try {
                 bplan.setInkrafttretensdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
             } catch (ParseException e) {
-                throw new IOException("Konnt Datum noicht \""+sDate+"\" parsen");
+                throw new IOException("Konnte inkrafttretensdatum nicht \""+sDate+"\" parsen");
             } //="2018-01-05"
         }
-
+        
+        String sDateAuslegungsStart = (String) f.getAttribute("auslegungsstartdatum");
+        if (sDateAuslegungsStart!=null && sDateAuslegungsStart.trim().length()>0) {
+            try {
+                bplan.setAuslegungsstartdatum((new SimpleDateFormat("yyyy-MM-dd")).parse(sDateAuslegungsStart));
+            } catch (ParseException e) {
+                throw new IOException("Konnte auslegungsstartdatum nicht \""+sDateAuslegungsStart+"\" parsen");
+            }
+        }       
+        String sDateAuslegungsEnd = (String) f.getAttribute("auslegungsenddatum");
+        if (sDateAuslegungsEnd!=null && sDateAuslegungsEnd.trim().length()>0) {
+            try {
+                bplan.setAuslegungsenddatum((new SimpleDateFormat("yyyy-MM-dd")).parse(sDateAuslegungsEnd));
+            } catch (ParseException e) {
+                throw new IOException("Konnte auslegungsenddatum nicht \""+sDateAuslegungsEnd+"\" parsen");
+            }
+        } 
         String sGemeinde = (String) f.getAttribute("gemeinde");
         if (sGemeinde!=null) {
             Gemeinde gemeinde = objectReader.readValue(sGemeinde, Gemeinde.class);		
