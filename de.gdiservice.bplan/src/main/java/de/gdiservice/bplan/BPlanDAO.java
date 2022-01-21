@@ -29,7 +29,7 @@ public class BPlanDAO {
     final static Logger logger = LoggerFactory.getLogger(BPlanDAO.class);
 
     final static String[] COLLUMN_NAMES = new String[] {            
-            "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum","rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
+            "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum", "auslegungsstartdatum", "auslegungsenddatum", "rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
     };
     
 
@@ -79,6 +79,18 @@ public class BPlanDAO {
             } else {
                 stmt.setObject(i++, null);
             }
+            
+            if (bplan.auslegungsstartdatum != null && bplan.auslegungsstartdatum.length>0) {
+                stmt.setArray(i++, con.createArrayOf("DATE", bplan.auslegungsstartdatum));
+            } else {
+                stmt.setArray(i++, null);
+            }
+            if (bplan.auslegungsenddatum != null && bplan.auslegungsenddatum.length>0) {
+                stmt.setArray(i++, con.createArrayOf("DATE", bplan.auslegungsenddatum));
+            } else {
+                stmt.setArray(i++, null);
+            }
+            
 
             if (bplan.rechtsstand != null) {
                 PGobject pgObject = new PGobject();
