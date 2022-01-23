@@ -183,8 +183,9 @@ public class BPlanImporter {
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     
                             } else {
-                                // update BPlan
+                                // update BPlan                                
                                 if (BPlanImporter.hasChanged(teilPlan, dbPlan)) {
+                                    
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     bplanDao.update(teilPlan);
@@ -364,6 +365,9 @@ public class BPlanImporter {
         if (a01 == null) {
             return (a02 == null) ? false : true;
         }
+        if (a02 == null) {
+            return true;
+        }
         if (a01.length != a02.length) {
             return true;
         }
@@ -445,15 +449,28 @@ public class BPlanImporter {
         }
         return false;
     }
+    
+    private static String toString(de.gdiservice.bplan.Gemeinde[] gemeinden) {
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<gemeinden.length; i++) {
+            sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
+            sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
+            sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
+            sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
+        }
+        return sb.toString();
+    }
 
     public static boolean hasChanged(BPlan plan01, BPlan plan02) {
 
 
 
         if (hasChanged(plan01.gemeinde, plan02.gemeinde)) {
+            logger.info(String.format("<>gemeinde %s %s", toString(plan01.gemeinde), toString(plan02.gemeinde)));
             return true;
         }
         if (hasChanged(plan01.getExternereferenzes(), plan02.getExternereferenzes())) {
+            logger.info(String.format("<>Externereferenzes %s %s", plan01.getExternereferenzes(), plan02.getExternereferenzes()));
             return true;
         }
 
@@ -461,31 +478,40 @@ public class BPlanImporter {
             throw new IllegalArgumentException("one Plan doesnt has a geometry");
         }
         if (!plan01.geom.equals(plan02.geom)) {
+            logger.info(String.format("<>geom %s %s", plan01.geom, plan02.geom));
             return true;
         }
         if (hasChanged(plan01.inkrafttretensdatum, plan02.inkrafttretensdatum)) {
+            logger.info(String.format("<>inkrafttretensdatum %s %s", plan01.inkrafttretensdatum, plan02.inkrafttretensdatum));
             return true;
         }
         if (hasChanged(plan01.name, plan02.name)) {
+            logger.info(String.format("<>name %s %s", plan01.name, plan02.name));
             return true;
         }
         if (hasChanged(plan01.nummer, plan02.nummer)) {
+            logger.info(String.format("<>nummer %s %s", plan01.nummer, plan02.nummer));
             return true;
         }
         if (!Arrays.equals(plan01.planart, plan02.planart)) {
+            logger.info(String.format("<>planart %s %s", plan01.planart, plan02.planart));
             return true;
         }
         if (hasChanged(plan01.rechtsstand, plan02.rechtsstand)) {
+            logger.info(String.format("<>rechtsstand %s %s", plan01.rechtsstand, plan02.rechtsstand));
             return true;
         }
         
         if (hasChanged(plan01.aendert, plan02.aendert)) {
+            logger.info(String.format("<>aendert %s %s", plan01.aendert, plan02.aendert));
             return true;
         }
         if (hasChanged(plan01.wurdegeaendertvon, plan02.wurdegeaendertvon)) {
+            logger.info(String.format("<>wurdegeaendertvon %s %s", plan01.wurdegeaendertvon, plan02.wurdegeaendertvon));
             return true;
         }
         if (hasChanged(plan01.internalid, plan02.internalid)) {
+            logger.info(String.format("<>internalid %s %s", plan01.internalid, plan02.internalid));
             return true;
         }
         return false;
@@ -526,7 +552,36 @@ public class BPlanImporter {
         System.out.println(sb);
     }
 
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
+        try {                
+            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+
+            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+
+            for (int i = 0; i < importConfigEntries.size(); i++) {                
+                ImportConfigEntry entry = importConfigEntries.get(i);
+                System.err.println("StellenId: \""+entry.stelle_id+"\"");
+                if (entry instanceof JobEntry) {
+                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+                }
+                ImportLogger logger = new ImportLogger();
+                bplImport.importWFS(con, entry, logger);
+                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+                
+                List<String> errors = logger.getErrors();
+                if (errors!=null && errors.size()>0) {
+                    System.err.println(errors.get(i));
+                }
+                if (entry instanceof JobEntry) {
+                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }
     
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
