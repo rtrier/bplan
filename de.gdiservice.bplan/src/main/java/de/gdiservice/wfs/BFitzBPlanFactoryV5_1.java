@@ -46,11 +46,11 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
         bplan.setRechtsstand((String) f.getAttribute("rechtsstand")); //="4000"
 
         String sDate = (String) f.getAttribute("inkrafttretensdatum");
-        if (sDate!=null) {
+        if (sDate!=null && sDate.trim().length()>0) {
             try {
                 bplan.setInkrafttretensdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
             } catch (ParseException e) {
-                throw new IOException("Konnt Datum noicht \""+sDate+"\" parsen");
+                throw new IOException("Konnt Datum nicht \""+sDate+"\" parsen");
             } //="2018-01-05"
         }
 
