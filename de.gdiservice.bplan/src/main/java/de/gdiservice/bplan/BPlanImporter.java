@@ -93,7 +93,8 @@ public class BPlanImporter {
             BPlanDAO bplanDao = new BPlanDAO(con, bplanTable);
             KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
 
-            for (BPlan plan : bPlans) {                
+            for (BPlan plan : bPlans) {        
+                logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
                 try {
                     if (!isStelleResponsible(entry.stelle_id, plan)) {
                         throw new IllegalAccessException("Stelle mit Id \""+entry.stelle_id+"\" ist nicht für die Gemeinde " + Arrays.toString(plan.getGemeinde()) + " zuständig");
@@ -136,7 +137,7 @@ public class BPlanImporter {
                             Konvertierung konvertierung;
                             if (dbPlan == null) {
                                 // neuer BPlan
-                                GemeindeDAO gemeindeDAO = new GemeindeDAO(con, "xplankonverter.gebietseinheiten");
+                                GemeindeDAO gemeindeDAO = new GemeindeDAO(con);
                                 de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
@@ -185,7 +186,6 @@ public class BPlanImporter {
                             } else {
                                 // update BPlan                                
                                 if (BPlanImporter.hasChanged(teilPlan, dbPlan)) {
-                                    
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     bplanDao.update(teilPlan);
@@ -402,8 +402,8 @@ public class BPlanImporter {
 
             ExterneRef exRef01 = a01[i].object;
             ExterneRef exRef02 = a02[i].object;
-
-            if (hasChanged(exRef01.art, exRef02.art)) {
+            
+            if (hasChanged(exRef01.art, exRef02.art)) {                
                 return true;
             }
             if (hasChanged(exRef01.beschreibung, exRef02.beschreibung)) {
@@ -461,57 +461,65 @@ public class BPlanImporter {
         return sb.toString();
     }
 
-    public static boolean hasChanged(BPlan plan01, BPlan plan02) {
+    public static boolean hasChanged(BPlan plan, BPlan dbPlan) {
 
 
 
-        if (hasChanged(plan01.gemeinde, plan02.gemeinde)) {
-            logger.info(String.format("<>gemeinde %s %s", toString(plan01.gemeinde), toString(plan02.gemeinde)));
+        if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
+            logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
             return true;
         }
-        if (hasChanged(plan01.getExternereferenzes(), plan02.getExternereferenzes())) {
-            logger.info(String.format("<>Externereferenzes %s %s", plan01.getExternereferenzes(), plan02.getExternereferenzes()));
+        if (hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
+            logger.info(String.format("<>Externereferenzes %s %s", plan.getExternereferenzes(), dbPlan.getExternereferenzes()));
             return true;
         }
 
-        if (plan01.geom == null || plan02.geom == null) {
+        if (plan.geom == null || dbPlan.geom == null) {
             throw new IllegalArgumentException("one Plan doesnt has a geometry");
         }
-        if (!plan01.geom.equals(plan02.geom)) {
-            logger.info(String.format("<>geom %s %s", plan01.geom, plan02.geom));
+        if (!plan.geom.equals(dbPlan.geom)) {
+            logger.info(String.format("<>geom %s %s", plan.geom, dbPlan.geom));
             return true;
         }
-        if (hasChanged(plan01.inkrafttretensdatum, plan02.inkrafttretensdatum)) {
-            logger.info(String.format("<>inkrafttretensdatum %s %s", plan01.inkrafttretensdatum, plan02.inkrafttretensdatum));
+        if (hasChanged(plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum)) {
+            logger.info(String.format("<>inkrafttretensdatum %s %s", plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum));
             return true;
         }
-        if (hasChanged(plan01.name, plan02.name)) {
-            logger.info(String.format("<>name %s %s", plan01.name, plan02.name));
+        if (hasChanged(plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum)) {
+            logger.info(String.format("<>auslegungsstartdatum %s %s", plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum));
             return true;
         }
-        if (hasChanged(plan01.nummer, plan02.nummer)) {
-            logger.info(String.format("<>nummer %s %s", plan01.nummer, plan02.nummer));
+        if (hasChanged(plan.auslegungsenddatum, dbPlan.auslegungsenddatum)) {
+            logger.info(String.format("<>auslegungsenddatum %s %s", plan.auslegungsenddatum, dbPlan.auslegungsenddatum));
+            return true;
+        }  
+        if (hasChanged(plan.name, dbPlan.name)) {
+            logger.info(String.format("<>name %s %s", plan.name, dbPlan.name));
             return true;
         }
-        if (!Arrays.equals(plan01.planart, plan02.planart)) {
-            logger.info(String.format("<>planart %s %s", plan01.planart, plan02.planart));
+        if (hasChanged(plan.nummer, dbPlan.nummer)) {
+            logger.info(String.format("<>nummer %s %s", plan.nummer, dbPlan.nummer));
             return true;
         }
-        if (hasChanged(plan01.rechtsstand, plan02.rechtsstand)) {
-            logger.info(String.format("<>rechtsstand %s %s", plan01.rechtsstand, plan02.rechtsstand));
+        if (!Arrays.equals(plan.planart, dbPlan.planart)) {
+            logger.info(String.format("<>planart %s %s", plan.planart, dbPlan.planart));
+            return true;
+        }
+        if (hasChanged(plan.rechtsstand, dbPlan.rechtsstand)) {
+            logger.info(String.format("<>rechtsstand %s %s", plan.rechtsstand, dbPlan.rechtsstand));
             return true;
         }
         
-        if (hasChanged(plan01.aendert, plan02.aendert)) {
-            logger.info(String.format("<>aendert %s %s", plan01.aendert, plan02.aendert));
+        if (hasChanged(plan.aendert, dbPlan.aendert)) {
+            logger.info(String.format("<>aendert %s %s", plan.aendert, dbPlan.aendert));
             return true;
         }
-        if (hasChanged(plan01.wurdegeaendertvon, plan02.wurdegeaendertvon)) {
-            logger.info(String.format("<>wurdegeaendertvon %s %s", plan01.wurdegeaendertvon, plan02.wurdegeaendertvon));
+        if (hasChanged(plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon)) {
+            logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
             return true;
         }
-        if (hasChanged(plan01.internalid, plan02.internalid)) {
-            logger.info(String.format("<>internalid %s %s", plan01.internalid, plan02.internalid));
+        if (hasChanged(plan.internalid, dbPlan.internalid)) {
+            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
             return true;
         }
         return false;

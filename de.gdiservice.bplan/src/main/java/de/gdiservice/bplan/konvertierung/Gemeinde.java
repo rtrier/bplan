@@ -6,7 +6,7 @@ public class Gemeinde {
 	public String amt_name; 
 	public Integer id_gmd;
 	public String rs;
-	public Integer ags;
+	public String ags;
 	public String gmd_name;
 	public Integer id_ot;
 	public String ot_name;
