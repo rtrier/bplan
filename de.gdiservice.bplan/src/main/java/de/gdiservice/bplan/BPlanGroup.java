@@ -100,6 +100,8 @@ public class BPlanGroup {
         plan.planart = orgPlan.planart;
         plan.rechtsstand = orgPlan.rechtsstand;
         plan.inkrafttretensdatum = orgPlan.inkrafttretensdatum;
+        plan.auslegungsstartdatum = orgPlan.auslegungsstartdatum;
+        plan.auslegungsenddatum = orgPlan.auslegungsenddatum;
         plan.gemeinde = orgPlan.gemeinde;        
         plan.geom = orgPlan.geom; 
         

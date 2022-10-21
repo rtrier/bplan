@@ -6,7 +6,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.postgis.jts.JtsGeometry;
@@ -52,10 +54,10 @@ public class BPlanImportStarter {
     Scheduler scheduler;
 
 
-    BPlanImportStarter(DBConnectionParameter dbParam, String cronExpr, String[] emailCredential, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) throws SchedulerException {
+    BPlanImportStarter(DBConnectionParameter dbParam, String cronExpr, Map<String, String> emailParams, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) throws SchedulerException {
         this.dbParam = dbParam;
         this.cronExpr = cronExpr;   
-        this.emailSender = new EMailSender(emailCredential[0], emailCredential[1]);
+        this.emailSender = new EMailSender(emailParams);
         this.kvwmapUrl = kvwmapUrl;
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
@@ -176,6 +178,13 @@ public class BPlanImportStarter {
         return con;
     }
 
+    static boolean validateEmailParam(Map<String, String> emailParams) {
+        return emailParams.get(EMailSender.PARAM_EMAIL_FROM) != null &&
+                emailParams.get(EMailSender.PARAM_EMAIL_SMTP_HOST) != null &&
+                emailParams.get(EMailSender.PARAM_EMAIL_SMTP_PORT) != null &&
+                emailParams.get(EMailSender.PARAM_EMAIL_USER) != null &&
+                emailParams.get(EMailSender.PARAM_EMAIL_PWD) != null;
+    }
 
 
     public static void main(String[] args) {
@@ -189,12 +198,12 @@ public class BPlanImportStarter {
             String cronExpr = argList.get("cronExpr");
             String sRunNow = argList.get("runNow");
             
-            String emailUser = argList.get("emailUser");
-            String emailPwd = argList.get("emailPwd");
-            String[] emailCredential = null;
-            if (emailUser!=null && emailPwd!=null) {
-                emailCredential = new String[] {emailUser, emailPwd};
-            }
+            Map<String, String> emailParams = new HashMap<>();
+            emailParams.put(EMailSender.PARAM_EMAIL_FROM, argList.get("emailFrom"));
+            emailParams.put(EMailSender.PARAM_EMAIL_SMTP_HOST, argList.get("emailSmtpHost"));
+            emailParams.put(EMailSender.PARAM_EMAIL_SMTP_PORT, argList.get("emailPort"));
+            emailParams.put(EMailSender.PARAM_EMAIL_USER, argList.get("emailUser"));
+            emailParams.put(EMailSender.PARAM_EMAIL_PWD, argList.get("emailPwd"));            
             
             String kvwmapUrl = argList.get("kvwmap_url");
             String kvwmapUserName = argList.get("kvwmap_username");  
@@ -234,8 +243,10 @@ public class BPlanImportStarter {
             }
 
             DBConnectionParameter dbParam = DBUtil.getConnectionParameter(f, dburl);
-            BPlanImportStarter starter = new BPlanImportStarter(dbParam, cronExpr, emailCredential, kvwmapUrl, kvwmapUserName, kvwmapPassword);
-            if (emailCredential == null) {
+            emailParams = validateEmailParam(emailParams) ? emailParams : null;
+            
+            BPlanImportStarter starter = new BPlanImportStarter(dbParam, cronExpr, emailParams, kvwmapUrl, kvwmapUserName, kvwmapPassword);
+            if (emailParams == null) {
                 System.out.println("E-Mail-Versand ist deaktiviert, Parameter emailUser oder emailPwd wurde nicht angegeben.");
             }
             if (runNow) { 

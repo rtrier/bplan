@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -232,5 +233,26 @@ public class KonvertierungDAO {
         }
         
     }     
+    
+    
+    public void updatePublishDate(Integer konvertierung_id, Timestamp time) throws SQLException {
+        PreparedStatement stmt = null;
+        try {    
+            String sql = "update xplankonverter.konvertierungen set veroeffentlichungsdatum = ? where id=?";
+            
+            stmt = con.prepareStatement(sql);
+            stmt.setTimestamp(1, time);
+            stmt.setObject(2, konvertierung_id);
+            logger.debug("{}", stmt);
+            stmt.executeUpdate();
+        }
+        finally {
+
+            if (stmt!=null) {
+                try { stmt.close(); } catch (SQLException e) {}
+            }
+        }
+        
+    }  
 
 }

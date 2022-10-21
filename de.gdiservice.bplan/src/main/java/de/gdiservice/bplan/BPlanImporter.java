@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -179,7 +180,10 @@ public class BPlanImporter {
                                 con.commit();
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
-                                konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
+                                // konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
+                                if (teilPlan.inkrafttretensdatum!=null && succeded) {
+                                    konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                }                                
                                 logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     
@@ -198,7 +202,10 @@ public class BPlanImporter {
                                     con.commit();
                                     
                                     boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
-                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
+//                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
+                                    if (teilPlan.inkrafttretensdatum!=null && succeded) {
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                    }
                                     
                                 } else {
                                     logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" unchanged.");

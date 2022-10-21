@@ -6,10 +6,14 @@ import java.sql.SQLException;
 
 import org.postgresql.util.PGobject;
 import org.postgresql.util.PGtokenizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Gemeinde extends PGobject implements Serializable, Cloneable {
 
+    final static Logger logger = LoggerFactory.getLogger(Gemeinde.class);
+    
     public Gemeinde()  {}
 
     public Gemeinde(Object object) throws SQLException {
@@ -28,20 +32,27 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
 
     @Override
     public void setValue(String value) throws SQLException {
-
+        
         String sqlString = PGtokenizer.removePara(PGtokenizer.removeCurlyBrace(value));
         PGtokenizer t = new PGtokenizer( sqlString, ',');
 
         ags  = t.getToken(0);
         rs  = t.getToken(1);
         gemeindename = t.getToken(2);
+        if (gemeindename.startsWith("\"")) {
+            gemeindename = gemeindename.substring(1);
+        }
+        if (gemeindename.endsWith("\"")) {
+            gemeindename = gemeindename.substring(0, gemeindename.length()-1);
+        }
         ortsteilname = t.getToken(3);
-
+        
         this.value = value;
     }	
 
     @Override
     public String getValue() {		
+        
         final String v = "(" + this.ags + "," + this.rs + ",\"" + this.gemeindename + "\", \"" + this.ortsteilname+ "\")"; 
         return v;
     }	

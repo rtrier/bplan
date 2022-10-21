@@ -50,8 +50,25 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
             try {
                 bplan.setInkrafttretensdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
             } catch (ParseException e) {
-                throw new IOException("Konnt Datum nicht \""+sDate+"\" parsen");
+                throw new IOException("Konnt Inkrafttretensdatum nicht \""+sDate+"\" parsen");
             } //="2018-01-05"
+        }
+        
+        String sAuslegungsstartdatum = (String) f.getAttribute("auslegungsstartdatum");
+        if (sAuslegungsstartdatum!=null && sAuslegungsstartdatum.trim().length()>0) {
+            try {
+                bplan.setAuslegungsstartdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sAuslegungsstartdatum));
+            } catch (ParseException e) {
+                throw new IOException("Konnt Auslegungssstartdatum nicht \""+sAuslegungsstartdatum+"\" parsen");
+            }
+        }        
+        String sAuslegungsenddatum = (String) f.getAttribute("auslegungsenddatum");
+        if (sAuslegungsenddatum!=null && sAuslegungsenddatum.trim().length()>0) {
+            try {
+                bplan.setAuslegungsenddatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sAuslegungsenddatum));
+            } catch (ParseException e) {
+                throw new IOException("Konnt Auslegungsenddatum nicht \""+sAuslegungsenddatum+"\" parsen");
+            }
         }
 
         String sGemeinde = (String) f.getAttribute("gemeinde");

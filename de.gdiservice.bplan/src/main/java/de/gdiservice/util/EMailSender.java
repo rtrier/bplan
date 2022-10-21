@@ -1,6 +1,7 @@
 package de.gdiservice.util;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 import java.util.Properties;
 
 import jakarta.mail.*;
@@ -10,16 +11,33 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 
 public class EMailSender {
+    
+    public static final String PARAM_EMAIL_FROM = "emailFrom";
+    public static final String PARAM_EMAIL_SMTP_HOST = "emailSmtpHost";
+    public static final String PARAM_EMAIL_SMTP_PORT = "emailPort";
+    public static final String PARAM_EMAIL_USER = "emailUser";
+    public static final String PARAM_EMAIL_PWD = "emailPwd";
 	
-	static String from = "ralf.trier@gdi-service.de";
-	static String smtpHost = "smtp.gmail.com";
-	static String port = "465";
+    private String from;
+    private String smtpHost;
+    private String port;
 	
     private String user;
     private String pwd;
 	
+    
+    public EMailSender(Map<String, String> emailParams) {
+        this.from = emailParams.get(PARAM_EMAIL_FROM);
+        this.smtpHost = emailParams.get(PARAM_EMAIL_SMTP_HOST);
+        this.port = emailParams.get(PARAM_EMAIL_SMTP_PORT);
+        this.user = emailParams.get(PARAM_EMAIL_USER);
+        this.pwd = emailParams.get(PARAM_EMAIL_PWD);
+    }
 	
-	public EMailSender(String user, String pwd) {
+	public EMailSender(String from, String smtpHost, String port, String user, String pwd) {
+	    this.from = from;
+	    this.smtpHost = smtpHost;
+	    this.port = port;
 	    this.user = user;
 	    this.pwd = pwd;
 	}
@@ -68,11 +86,13 @@ public class EMailSender {
 	public static void main(String[] args) {
 		try {
 		    ArgList argList = new ArgList(args);
-
+		    String from = argList.get("from");
+		    String smtpHost = argList.get("smtpHost");
+		    String port = argList.get("port");
             String emailUser = argList.get("emailUser");
             String emailPwd = argList.get("emailPwd");
             
-			(new EMailSender(emailUser, emailPwd)).sendEmail("Das ist eine erste Mail vom Radnetzplaner<br>das lsdfjasofj hkdshjafkafj", "Mail vom Radnetzplaner", "ralf.trier@outlook.de");
+			(new EMailSender(from, smtpHost, port, emailUser, emailPwd)).sendEmail("Das ist eine erste Mail vom Radnetzplaner<br>das lsdfjasofj hkdshjafkafj", "Mail vom Radnetzplaner", "ralf.trier@outlook.de");
 		} 
 		catch (Exception e) {		
 			e.printStackTrace();
