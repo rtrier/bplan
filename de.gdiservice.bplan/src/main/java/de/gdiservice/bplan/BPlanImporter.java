@@ -270,6 +270,13 @@ public class BPlanImporter {
         try {
             boolean succedded = true; 
             
+            if (konvertierung==null) {
+                throw new RuntimeException("Validation: konvertierung was null");
+            }
+            if (bplan==null) {
+                throw new RuntimeException("Validation: bplan was null");
+            }
+            
             StringBuilder sb = new StringBuilder(kvwmapUrl);                
             sb.append("?go=xplankonverter_konvertierung");
             sb.append("&konvertierung_id=").append(bplan.getKonvertierungId());
@@ -303,12 +310,15 @@ public class BPlanImporter {
             GetMethod get02 = new GetMethod(sb.toString());
             int httpCode02 = client.executeMethod(get02);
             if (httpCode02!=200) {
-                logger.error(get02.getResponseBodyAsString());
-                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
-                        get01.getResponseBodyAsString() + "\"", null);
+                    logger.error(get02.getResponseBodyAsString());
+                    throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
+                            get01.getResponseBodyAsString() + "\"", null);
             }
             ObjectReader objectReader = new ObjectMapper().reader();
             String json = get02.getResponseBodyAsString();
+            if (json == null) {
+                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Die Antwort vom Server enthielt keine Daten URL: \""+kvwmapUrl+"\"", null);                
+            }
             logger.info(json);
             try {
                 JsonNode node = objectReader.readValue(json, JsonNode.class);
@@ -332,8 +342,10 @@ public class BPlanImporter {
             }
             return succedded;
         } catch (IOException ex) {
+            ex.printStackTrace();
             throw new ValidationException("Fehler bei Validierung durch den Backend.", ex);
         } catch (RuntimeException ex) {
+            ex.printStackTrace();
             throw new ValidationException("unspezifischer Fehler bei Validierung.", ex);
         }
     }
