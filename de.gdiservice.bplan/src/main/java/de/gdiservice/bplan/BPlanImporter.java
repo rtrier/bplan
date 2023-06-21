@@ -193,7 +193,10 @@ public class BPlanImporter {
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     bplanDao.update(teilPlan);
-                                    konvertierungDAO.update(teilPlan.konvertierung_id);
+                                    int updateCount = konvertierungDAO.update(teilPlan.konvertierung_id);
+                                    if (updateCount == 0) {
+                                        throw new IllegalArgumentException("Es existiert ein BPlan mit der Plannummer "+ teilPlanNr +" aber kein zugehöriger Eintrag in der Konvertierungs-Tabelle.");
+                                    }
                                     konvertierungDAO.updatePublishFlag(teilPlan.konvertierung_id, false);
                                     konvertierung = konvertierungDAO.find(teilPlan.konvertierung_id); 
                                     

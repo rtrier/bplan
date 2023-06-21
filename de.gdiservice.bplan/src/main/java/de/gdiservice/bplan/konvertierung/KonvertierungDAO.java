@@ -191,7 +191,7 @@ public class KonvertierungDAO {
         return konvertierung;
     }
 
-    public void update(Integer konvertierung_id) throws SQLException {
+    public int update(Integer konvertierung_id) throws SQLException {
         
         PreparedStatement stmt = null;
 
@@ -201,9 +201,7 @@ public class KonvertierungDAO {
             stmt = con.prepareStatement(sql);
             stmt.setObject(1, konvertierung_id);
             logger.debug("{}", stmt);
-            stmt.executeUpdate();
-            
-            
+            return stmt.executeUpdate();
 
         }
         finally {
