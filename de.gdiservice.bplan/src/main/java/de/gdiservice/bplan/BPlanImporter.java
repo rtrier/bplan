@@ -195,7 +195,7 @@ public class BPlanImporter {
                                     bplanDao.update(teilPlan);
                                     int updateCount = konvertierungDAO.update(teilPlan.konvertierung_id);
                                     if (updateCount == 0) {
-                                        throw new IllegalArgumentException("Es existiert ein BPlan mit der Plannummer "+ teilPlanNr +" aber kein zugehöriger Eintrag in der Konvertierungs-Tabelle.");
+                                        throw new IllegalArgumentException("In der DB existiert ein BPlan mit der gmlId. Der zugehörige Eintrag in der Konvertierungs-Tabelle existiert aber nicht.");
                                     }
                                     konvertierungDAO.updatePublishFlag(teilPlan.konvertierung_id, false);
                                     konvertierung = konvertierungDAO.find(teilPlan.konvertierung_id); 
