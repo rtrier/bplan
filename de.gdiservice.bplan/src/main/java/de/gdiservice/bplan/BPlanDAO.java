@@ -331,7 +331,11 @@ public class BPlanDAO {
                 String[] strings = new String[count];
                 if (count>0) {
                     for (int i=0; i<count; i++) {
-                        strings[i] = getString((PGobject)pgObjects[i]);
+                        if (pgObjects[i] instanceof String) {                            
+                            strings[i] = (String)pgObjects[i];
+                        } else {
+                            strings[i] = getString((PGobject)pgObjects[i]);
+                        }
                     }
                 }
                 return strings;

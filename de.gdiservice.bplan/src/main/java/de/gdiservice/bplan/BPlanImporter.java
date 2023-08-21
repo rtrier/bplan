@@ -272,6 +272,7 @@ public class BPlanImporter {
         
         try {
             boolean succedded = true; 
+            ObjectReader objectReader = new ObjectMapper().reader();
             
             if (konvertierung==null) {
                 throw new RuntimeException("Validation: konvertierung was null");
@@ -286,8 +287,8 @@ public class BPlanImporter {
             sb.append("&login_name=").append(this.kvwmapLoginName);
             sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
             sb.append("&passwort=").append(this.kvwmapPassword);
-           
-            
+            sb.append("&mime_type=formatter&format=json_result");
+             
             String s;
             try {
                 s = parseUrl(sb.toString());
@@ -297,40 +298,64 @@ public class BPlanImporter {
             HttpClient client = new HttpClient();
             GetMethod get01 = new GetMethod(s);
             int httpCode01 = client.executeMethod(get01);
-            if (httpCode01!=200) {
-                logger.error(get01.getResponseBodyAsString());
-                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
-                        get01.getResponseBodyAsString() + "\"", null);
-            }        
+            final String result01 = get01.getResponseBodyAsString();
+            if (httpCode01!=200 || result01==null || result01.trim().length()==0) {
+                logger.error("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
+                        result01 + "\"");
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " Antwort des Servers:\""+
+                        result01 + "\"", null);
+            } else {
+                JsonNode node = objectReader.readValue(result01, JsonNode.class);
+                JsonNode n1 = node.get("success");
+                if (n1 == null || !n1.asBoolean()) {
+                    throw new ValidationException("Validierung war nicht erfolgreich. Antwort des Servers:\""+ result01 + "\"", null);
+                } else {
+                    logger.info("ErgebnisValidierungsRequest:\""+node+"\"");
+                }
+            }
             get01.releaseConnection();        
+            
             sb = new StringBuilder(kvwmapUrl);
             sb.append("?go=Layer-Suche_Suchen");
             sb.append("&selected_layer_id=18");
             sb.append("&operator_konvertierung_id==");
             sb.append("&value_konvertierung_id=").append(bplan.getKonvertierungId());
             sb.append("&mime_type=formatter");
+            sb.append("&login_name=").append(this.kvwmapLoginName);
+            // sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
+            sb.append("&passwort=").append(this.kvwmapPassword);
             sb.append("&format=json");
-            GetMethod get02 = new GetMethod(sb.toString());
+            try {
+                s = parseUrl(sb.toString());
+            } catch (MalformedURLException | URISyntaxException ex) {
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. URL nicht interpretierbar: \""+sb+"\"", ex);
+            } 
+            GetMethod get02 = new GetMethod(s);
             int httpCode02 = client.executeMethod(get02);
             if (httpCode02!=200) {
                     logger.error(get02.getResponseBodyAsString());
                     throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
                             get01.getResponseBodyAsString() + "\"", null);
             }
-            ObjectReader objectReader = new ObjectMapper().reader();
+            
             String json = get02.getResponseBodyAsString();
             if (json == null) {
                 throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Die Antwort vom Server enthielt keine Daten URL: \""+kvwmapUrl+"\"", null);                
             }
-            logger.info(json);
             try {
                 JsonNode node = objectReader.readValue(json, JsonNode.class);
+                logger.info("Validierungsergebnisse:\""+node+"\"");
                 
                 if (node.isArray()) {
 //            System.out.println(node.size());
                     for (int i=0; i<node.size() && succedded; i++) {
                         JsonNode n = node.get(i);
-                        succedded = "Erfolg".equals(n.get("ergebnis_status").asText());               
+                        JsonNode n1 = n.get("ergebnis_status");
+                        if (n1 !=null) {
+                            succedded = "Erfolg".equals(n1.asText());
+                        } else {
+                            throw new ValidationException("Das Valisierungsergebnis konnte nicht interpretiert werden. Response:\""+json+"\" request:"+sb.toString(), null);
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -485,7 +510,7 @@ public class BPlanImporter {
 
     public static boolean hasChanged(BPlan plan, BPlan dbPlan) {
 
-
+        
 
         if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
             logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
