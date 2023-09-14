@@ -29,18 +29,17 @@ import de.gdiservice.bplan.konvertierung.Konvertierung.KonvertierungStatus;
 import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
 import de.gdiservice.util.DBConnectionParameter;
 import de.gdiservice.util.EMailSender;
-import de.gdiservice.wfs.BFitzBPlanFactory;
-import de.gdiservice.wfs.BFitzBPlanFactoryV5_1;
+import de.gdiservice.wfs.BFitzFPlanFactoryV5_1;
 import de.gdiservice.wfs.WFSClient;
 import de.gdiservice.wfs.WFSFactory;
 
 
-public class BPlanImporter {
+public class FPlanImporter {
 
-    final static Logger logger = LoggerFactory.getLogger(BPlanImporter.class);
+    final static Logger logger = LoggerFactory.getLogger(FPlanImporter.class);
     
 
-    private String bplanTable;
+    private String fplanTable;
     private String konvertierungTable;
     
     private String kvwmapUrl;
@@ -48,7 +47,7 @@ public class BPlanImporter {
     private String kvwmapLoginName;
     private String kvwmapPassword;
 
-    WFSFactory<BPlan> wfsFactory;
+    WFSFactory<FPlan> wfsFactory;
     
     boolean test = false;
 
@@ -57,64 +56,52 @@ public class BPlanImporter {
         v5_3
     }
 
-    public BPlanImporter(String konvertierungTable, String bplanTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
-        this.bplanTable = bplanTable;
+    public FPlanImporter(String konvertierungTable, String fplanTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+        this.fplanTable = fplanTable;
         this.konvertierungTable = konvertierungTable;
         this.kvwmapUrl = kvwmapUrl;
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
-        if (version==Version.v5_1) {
-            this.wfsFactory = new BFitzBPlanFactoryV5_1();
-        } else {
-            this.wfsFactory = new BFitzBPlanFactory();
-        }
+        this.wfsFactory = new BFitzFPlanFactoryV5_1();
     }
     
     public void setTest(boolean isTest) {
         test = isTest;
     }
     
-//    private boolean splitPlan(BPlan plan) {
-//        String[] planArten = plan.getPlanart();
-//        for (String s : planArten) {
-//            if (planArten[0].charAt(0)=='1' ||  planArten[0].charAt(0)=='3') {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
 
-    public void updateBPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException  {
+
+    public void updateFPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<FPlan> fPlans) throws SQLException  {
         boolean autoCommit = con.getAutoCommit();
         if (autoCommit) {
             con.setAutoCommit(false);
         }
 
-        if (bPlans != null) {
-            BPlanDAO bplanDao = new BPlanDAO(con, bplanTable);
+        if (fPlans != null) {
+            FPlanDAO fplanDao = new FPlanDAO(con, fplanTable);
             KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
 
-            for (BPlan plan : bPlans) {        
+            for (FPlan plan : fPlans) {        
                 logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
                 try {
                     if (!isStelleResponsible(entry.stelle_id, plan)) {
                         throw new IllegalAccessException("Stelle mit Id \""+entry.stelle_id+"\" ist nicht für die Gemeinde " + Arrays.toString(plan.getGemeinde()) + " zuständig");
                     }
                     
-                    // List<BPlan> teilPlaene = splitPlan(plan) ? BPlanGroup.split(plan) : Collections.singletonList(plan);
-                    List<BPlan> teilPlaene = BPlanGroup.split(plan);
+                    // List<FPlan> teilPlaene = splitPlan(plan) ? FPlanGroup.split(plan) : Collections.singletonList(plan);
+                    List<FPlan> teilPlaene = FPlanGroup.split(plan);
 
-                    String geomValidierungsResult = bplanDao.validateGeom(plan.getGeom());
+                    String geomValidierungsResult = fplanDao.validateGeom(plan.getGeom());
                     if ("Valid Geometry".equals(geomValidierungsResult)) {
 
-                        List<BPlan> listDBPlaene = bplanDao.findByInternalIdLikeGmlId(plan.getGml_id());
+                        List<FPlan> listDBPlaene = fplanDao.findByInternalIdLikeGmlId(plan.getGml_id());
                         
                         /**
                          * Setzen der Felder aendert und wurdegeaendertvon
                          */
-                        BPlan previousPlan = null;
+                        FPlan previousPlan = null;
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
-                            BPlan teilPlan = teilPlaene.get(teilPlanNr);
+                            FPlan teilPlan = teilPlaene.get(teilPlanNr);
                             teilPlan.setInternalId(plan.getGml_id()+"-"+teilPlanNr);
                             
                             if (teilPlanNr>0) {
@@ -133,11 +120,11 @@ public class BPlanImporter {
                         
                         
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
-                            BPlan teilPlan = teilPlaene.get(teilPlanNr);
-                            BPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
+                            FPlan teilPlan = teilPlaene.get(teilPlanNr);
+                            FPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
                             Konvertierung konvertierung;
                             if (dbPlan == null) {
-                                // neuer BPlan
+                                // neuer FPlan
                                 GemeindeDAO gemeindeDAO = new GemeindeDAO(con);
                                 de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
@@ -156,19 +143,19 @@ public class BPlanImporter {
                                 Integer iPlanArt = null;
     
                                 try {
-                                    if (teilPlan.getPlanart()!=null && teilPlan.getPlanart().length>0) {
-                                        iPlanArt = Integer.parseInt(teilPlan.getPlanart()[0]);
+                                    if (teilPlan.getPlanart()!=null) {
+                                        iPlanArt = Integer.parseInt(teilPlan.getPlanart());
                                     } else {
                                         throw new IllegalArgumentException("WFS enthält keine Planart.");
                                     }
                                 } catch (NumberFormatException e) {
-                                    throw new IllegalArgumentException("Planart für gmlId=\""+teilPlan.getGml_id()+"\" \""+teilPlan.getPlanart()[0]+"\" ist nicht gültig.");
+                                    throw new IllegalArgumentException("Planart für gmlId=\""+teilPlan.getGml_id()+"\" \""+teilPlan.getPlanart()+"\" ist nicht gültig.");
                                 }                    
-                                BPlan.PlanArt planArt = BPlan.PlanArt.get(iPlanArt);
+                                FPlan.PlanArt planArt = FPlan.PlanArt.get(iPlanArt);
                                 if (planArt==null) {
                                     throw new IllegalArgumentException("Planart für gmlId=\""+teilPlan.getGml_id()+"\" \""+planArt+"\" ist im System nicht bekannt.");
                                 }
-                                konvertierung.planart = "BP-Plan";
+                                konvertierung.planart = "FP-Plan";
                                 konvertierung.epsg = Konvertierung.EPSGCodes.EPSG_25833;
                                 konvertierung.input_epsg = Konvertierung.EPSGCodes.EPSG_25833;
                                 konvertierung.output_epsg = Konvertierung.EPSGCodes.EPSG_25833;
@@ -176,42 +163,41 @@ public class BPlanImporter {
     
                                 Konvertierung dbKonvertierung = konvertierungDAO.insert(konvertierung);                    
                                 teilPlan.setKonvertierungId(dbKonvertierung.id);
-                                bplanDao.insert(teilPlan);
+                                fplanDao.insert(teilPlan);
                                 con.commit();
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
-                                // konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
-                                if (teilPlan.inkrafttretensdatum!=null && succeded) {
-                                    konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                if (teilPlan.wirksamkeitsdatum!=null && succeded) {
+                                    konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
                                 }                                
                                 logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     
                             } else {
-                                // update BPlan                                
-                                if (BPlanImporter.hasChanged(teilPlan, dbPlan)) {
+                                // update FPlan                                
+                                if (FPlanImporter.hasChanged(teilPlan, dbPlan)) {
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
-                                    bplanDao.update(teilPlan);
+                                    fplanDao.update(teilPlan);
                                     int updateCount = konvertierungDAO.update(teilPlan.konvertierung_id);
                                     if (updateCount == 0) {
-                                        throw new IllegalArgumentException("In der DB existiert ein BPlan mit der gmlId. Der zugehörige Eintrag in der Konvertierungs-Tabelle existiert aber nicht.");
+                                        throw new IllegalArgumentException("In der DB existiert ein FPlan mit der gmlId. Der zugehörige Eintrag in der Konvertierungs-Tabelle existiert aber nicht.");
                                     }
                                     konvertierungDAO.updatePublishFlag(teilPlan.konvertierung_id, false);
                                     konvertierung = konvertierungDAO.find(teilPlan.konvertierung_id); 
                                     
-                                    logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
+                                    logger.info("FPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
                                     con.commit();
                                     
                                     boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
 //                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
-                                    if (teilPlan.inkrafttretensdatum!=null && succeded) {
-                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                    if (teilPlan.wirksamkeitsdatum!=null && succeded) {
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
                                     }
                                     
                                 } else {
-                                    logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" unchanged.");
+                                    logger.info("FPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" unchanged.");
                                     importLogger.addLine(String.format("unchanged %s", teilPlan.getGml_id()));
                                 }
     
@@ -228,8 +214,8 @@ public class BPlanImporter {
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
                     }
-                    importLogger.addError("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
-                    logger.error("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
+                    importLogger.addError("error updating FPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
+                    logger.error("error updating FPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
         }
@@ -245,7 +231,7 @@ public class BPlanImporter {
      * @param plan
      * @return
      */
-    private boolean isStelleResponsible(Integer stelle_id, BPlan plan) {
+    private boolean isStelleResponsible(Integer stelle_id, FPlan plan) {
         de.gdiservice.bplan.Gemeinde[] gemeinden = plan.getGemeinde();
         if (gemeinden!=null) {
             for (de.gdiservice.bplan.Gemeinde gemeinde : gemeinden) {
@@ -268,18 +254,11 @@ public class BPlanImporter {
                toURL().toExternalForm();
    }
     
-    public boolean validate(Konvertierung konvertierung, BPlan bplan, String kvwmapUrl, ImportLogger importLogger) throws ValidationException {
+    public boolean validate(Konvertierung konvertierung, FPlan bplan, String kvwmapUrl, ImportLogger importLogger) throws ValidationException {
         
         try {
             boolean succedded = true; 
             ObjectReader objectReader = new ObjectMapper().reader();
-            
-            if (konvertierung==null) {
-                throw new RuntimeException("Validation: konvertierung was null");
-            }
-            if (bplan==null) {
-                throw new RuntimeException("Validation: bplan was null");
-            }
             
             StringBuilder sb = new StringBuilder(kvwmapUrl);                
             sb.append("?go=xplankonverter_konvertierung");
@@ -288,7 +267,7 @@ public class BPlanImporter {
             sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
             sb.append("&passwort=").append(this.kvwmapPassword);
             sb.append("&mime_type=formatter&format=json_result");
-             
+            
             String s;
             try {
                 s = parseUrl(sb.toString());
@@ -302,7 +281,7 @@ public class BPlanImporter {
             if (httpCode01!=200 || result01==null || result01.trim().length()==0) {
                 logger.error("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
                         result01 + "\"");
-                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " Antwort des Servers:\""+
+                throw new ValidationException("Validierung konnte nicht durchgeführt werden. Der Server antwortete mit HTTP-Code "+ httpCode01 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
                         result01 + "\"", null);
             } else {
                 JsonNode node = objectReader.readValue(result01, JsonNode.class);
@@ -314,7 +293,6 @@ public class BPlanImporter {
                 }
             }
             get01.releaseConnection();        
-            
             sb = new StringBuilder(kvwmapUrl);
             sb.append("?go=Layer-Suche_Suchen");
             sb.append("&selected_layer_id=18");
@@ -323,7 +301,7 @@ public class BPlanImporter {
             sb.append("&mime_type=formatter");
             sb.append("&login_name=").append(this.kvwmapLoginName);
             // sb.append("&Stelle_ID=").append(konvertierung.stelle_id);
-            sb.append("&passwort=").append(this.kvwmapPassword);
+            sb.append("&passwort=").append(this.kvwmapPassword);            
             sb.append("&format=json");
             try {
                 s = parseUrl(sb.toString());
@@ -333,18 +311,15 @@ public class BPlanImporter {
             GetMethod get02 = new GetMethod(s);
             int httpCode02 = client.executeMethod(get02);
             if (httpCode02!=200) {
-                    logger.error(get02.getResponseBodyAsString());
-                    throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
-                            get01.getResponseBodyAsString() + "\"", null);
+                logger.error(get02.getResponseBodyAsString());
+                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Der Server antwortete mit HTTP-Code "+ httpCode02 + " URL: \""+kvwmapUrl+"\". Antwort des Servers:\""+
+                        get01.getResponseBodyAsString() + "\"", null);
             }
             
             String json = get02.getResponseBodyAsString();
-            if (json == null) {
-                throw new ValidationException("Die Validierungsergebnisse konnten nicht abgerufen werden. Die Antwort vom Server enthielt keine Daten URL: \""+kvwmapUrl+"\"", null);                
-            }
+            logger.info(json);
             try {
                 JsonNode node = objectReader.readValue(json, JsonNode.class);
-                logger.info("Validierungsergebnisse:\""+node+"\"");
                 
                 if (node.isArray()) {
 //            System.out.println(node.size());
@@ -380,19 +355,19 @@ public class BPlanImporter {
 
     public void importWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
 
-        List<BPlan> bPlans = null;
+        List<FPlan> fPlans = null;
 
         try {
             final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
-            bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
+            fPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
         } 
         catch (Exception ex) {
             logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);
             importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
         }
 
-        updateBPlaene(con, importLogger, entry, bPlans);
+        updateFPlaene(con, importLogger, entry, fPlans);
 
     }
 
@@ -508,9 +483,9 @@ public class BPlanImporter {
         return sb.toString();
     }
 
-    public static boolean hasChanged(BPlan plan, BPlan dbPlan) {
+    public static boolean hasChanged(FPlan plan, FPlan dbPlan) {
 
-        
+
 
         if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
             logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
@@ -528,8 +503,8 @@ public class BPlanImporter {
             logger.info(String.format("<>geom %s %s", plan.geom, dbPlan.geom));
             return true;
         }
-        if (hasChanged(plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum)) {
-            logger.info(String.format("<>inkrafttretensdatum %s %s", plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum));
+        if (hasChanged(plan.wirksamkeitsdatum, dbPlan.wirksamkeitsdatum)) {
+            logger.info(String.format("<>inkrafttretensdatum %s %s", plan.wirksamkeitsdatum, dbPlan.wirksamkeitsdatum));
             return true;
         }
         if (hasChanged(plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum)) {
@@ -548,7 +523,7 @@ public class BPlanImporter {
             logger.info(String.format("<>nummer %s %s", plan.nummer, dbPlan.nummer));
             return true;
         }
-        if (!Arrays.equals(plan.planart, dbPlan.planart)) {
+        if (plan.planart != dbPlan.planart) {
             logger.info(String.format("<>planart %s %s", plan.planart, dbPlan.planart));
             return true;
         }
@@ -573,11 +548,11 @@ public class BPlanImporter {
     }
 
 
-    public static void print(String text, BPlan bPlan) {
+    public static void print(String text, FPlan bPlan) {
         StringBuilder sb = new StringBuilder();
         sb.append(text).append('\n');
-        sb.append('\t').append("[id=" + bPlan.id + ", name=" + bPlan.name + ", gml_id=" + bPlan.gml_id + ", nummer=" + bPlan.nummer + ", planart="
-                + bPlan.planart + ", rechtsstand=" + bPlan.rechtsstand + ", inkrafttretensdatum=" + bPlan.inkrafttretensdatum);
+        sb.append('\t').append("[name=" + bPlan.name + ", gml_id=" + bPlan.gml_id + ", nummer=" + bPlan.nummer + ", planart="
+                + bPlan.planart + ", rechtsstand=" + bPlan.rechtsstand + ", wirksamkeitsdatum=" + bPlan.wirksamkeitsdatum);
         sb.append("\n\tgemeinde=[");
         if (bPlan.gemeinde!=null && bPlan.gemeinde.length>0) {
             for (int i=0; i<bPlan.gemeinde.length; i++) {
@@ -610,7 +585,7 @@ public class BPlanImporter {
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            FPlanImporter bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
@@ -641,8 +616,7 @@ public class BPlanImporter {
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-            FPlanImporter fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            FPlanImporter bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
@@ -653,15 +627,7 @@ public class BPlanImporter {
                     ConfigReader.setJobStarted(con, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                    bplImport.importWFS(con, entry, logger);
-                } else {
-                    if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        fplImport.importWFS(con, entry, logger);
-                    } else {
-                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden erden nur B_PLAN und F_PLAN");
-                    }
-                }
+                bplImport.importWFS(con, entry, logger);
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 
                 List<String> errors = logger.getErrors();
