@@ -358,13 +358,13 @@ public class FPlanImporter {
         List<FPlan> fPlans = null;
 
         try {
-            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
-            importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";            
+            importLogger.addLine("Reading WFS (F-Plan): \""+ entry.onlineresource + "\"");
             fPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
         } 
         catch (Exception ex) {
             logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);
-            importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
+            importLogger.addError("ERROR - Reading WFS (F-Plan): \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
         }
 
         updateFPlaene(con, importLogger, entry, fPlans);

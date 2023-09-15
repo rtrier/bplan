@@ -610,8 +610,9 @@ public class BPlanImporter {
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-
+            
+            BPlanImporter bplImport = null;
+            FPlanImporter fplImport = null;
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
@@ -621,7 +622,21 @@ public class BPlanImporter {
                     ConfigReader.setJobStarted(con, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                bplImport.importWFS(con, entry, logger);
+                if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                    if (bplImport==null) {
+                        bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                    }
+                    bplImport.importWFS(con, entry, logger);
+                } else {
+                    if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        if (fplImport==null) {
+                            fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                        }
+                        fplImport.importWFS(con, entry, logger);
+                    } else {
+                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden erden nur B_PLAN und F_PLAN");
+                    }
+                }                
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 
                 List<String> errors = logger.getErrors();
