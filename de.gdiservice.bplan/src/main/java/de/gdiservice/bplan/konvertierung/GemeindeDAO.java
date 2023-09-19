@@ -110,7 +110,7 @@ public class GemeindeDAO {
         if (!gemeindeNamen.contains(gmd_name)) {
             throw new IllegalArgumentException("Gemeindename nicht gültig. Mögliche Werte: "+toString(gemeindeNamen));
         }
-        if (!otNamen.contains(ot_name)) {
+        if (ot_name !=null && !otNamen.contains(ot_name)) {
             throw new IllegalArgumentException("Ortsteilname nicht gültig. Mögliche Werte: "+toString(otNamen));
         }
         
