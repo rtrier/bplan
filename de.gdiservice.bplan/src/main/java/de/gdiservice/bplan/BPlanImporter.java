@@ -294,7 +294,8 @@ public class BPlanImporter {
                 s = parseUrl(sb.toString());
             } catch (MalformedURLException | URISyntaxException ex) {
                 throw new ValidationException("Validierung konnte nicht durchgeführt werden. URL nicht interpretierbar: \""+sb+"\"", ex);
-            }        
+            } 
+            logger.info("ValidierungsRequest: \""+s+"\"");
             HttpClient client = new HttpClient();
             GetMethod get01 = new GetMethod(s);
             int httpCode01 = client.executeMethod(get01);
@@ -313,8 +314,7 @@ public class BPlanImporter {
                     logger.info("ErgebnisValidierungsRequest:\""+node+"\"");
                 }
             }
-            get01.releaseConnection();        
-            
+            get01.releaseConnection();
             sb = new StringBuilder(kvwmapUrl);
             sb.append("?go=Layer-Suche_Suchen");
             sb.append("&selected_layer_id=18");
@@ -330,6 +330,7 @@ public class BPlanImporter {
             } catch (MalformedURLException | URISyntaxException ex) {
                 throw new ValidationException("Validierung konnte nicht durchgeführt werden. URL nicht interpretierbar: \""+sb+"\"", ex);
             } 
+            logger.info("RequestValidierungsErgebnisse: \""+s+"\"");
             GetMethod get02 = new GetMethod(s);
             int httpCode02 = client.executeMethod(get02);
             if (httpCode02!=200) {
