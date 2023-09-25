@@ -45,7 +45,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         fplan.setPlanart( (String) f.getAttribute("planart")); // "{10001}"
         fplan.setRechtsstand((String) f.getAttribute("rechtsstand")); //="4000"
 
-        String sDate = (String) f.getAttribute("inkrafttretensdatum");
+        String sDate = (String) f.getAttribute("wirksamkeitsdatum");
         if (sDate!=null && sDate.trim().length()>0) {
             try {
                 fplan.setWirksamkeitsdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
