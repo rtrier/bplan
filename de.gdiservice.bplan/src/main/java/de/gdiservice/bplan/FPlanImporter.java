@@ -63,6 +63,9 @@ public class FPlanImporter {
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
         this.wfsFactory = new BFitzFPlanFactoryV5_1();
+        if (kvwmapLoginName==null || kvwmapPassword==null) {
+            logger.error("kvwmapLoginName="+this.kvwmapLoginName+" or kvwmapPassword"+" is null", new Exception());
+        }
     }
     
     public void setTest(boolean isTest) {
