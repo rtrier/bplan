@@ -120,7 +120,7 @@ public class BPlanImporter {
                             if (teilPlanNr>0) {
                                 UUID teilPlanUUID = (teilPlanNr<listDBPlaene.size()) ? listDBPlaene.get(teilPlanNr).getGml_id() : UUID.randomUUID();
                                 teilPlan.setGml_id(teilPlanUUID);
-                                teilPlan.name = teilPlan.name + " " + String.valueOf(teilPlanNr) + ". Änderung";
+//                                teilPlan.name = teilPlan.name + " " + String.valueOf(teilPlanNr) + ". Änderung";
                                 VerbundenerPlan aendert = new VerbundenerPlan(plan.name, RechtscharakterPlanaenderung.Aenderung, plan.nummer, previousPlan.getGml_id().toString());
                                 teilPlan.setAendert(aendert);
                                 VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.name, RechtscharakterPlanaenderung.Aenderung, plan.nummer, teilPlan.getGml_id().toString()); 
