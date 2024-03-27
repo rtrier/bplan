@@ -66,7 +66,7 @@ public class BPlanImporter {
         this.kvwmapPassword = kvwmapPassword;
         if (version==Version.v5_1) {
             this.wfsFactory = new BFitzBPlanFactoryV5_1(false);
-        } else if (version==Version.v5_1) {
+        } else if (version==Version.v5_1n) {
             this.wfsFactory = new BFitzBPlanFactoryV5_1(true);
         }
         else {

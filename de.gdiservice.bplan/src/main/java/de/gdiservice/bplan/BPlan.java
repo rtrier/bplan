@@ -186,7 +186,11 @@ public class BPlan {
     
     public void addExterneReferenz(PGExterneReferenz pgExterneReferenz) {
         if (this.externeReferenzes==null) {
-            this.externeReferenzes = new PGExterneReferenz[] {pgExterneReferenz};
+            if (pgExterneReferenz instanceof PGExterneReferenzAuslegung) {
+                this.externeReferenzes = new PGExterneReferenzAuslegung[] {(PGExterneReferenzAuslegung)pgExterneReferenz};
+            } else {
+                this.externeReferenzes = new PGExterneReferenz[] {pgExterneReferenz};
+            }
         } else {
             this.externeReferenzes = Arrays.copyOf(this.externeReferenzes, this.externeReferenzes.length + 1);
             this.externeReferenzes[this.externeReferenzes.length - 1] = pgExterneReferenz;

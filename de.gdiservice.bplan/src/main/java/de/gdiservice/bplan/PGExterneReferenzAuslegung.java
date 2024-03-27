@@ -11,6 +11,13 @@ public class PGExterneReferenzAuslegung extends PGExterneReferenz {
      * 
      */
     private static final long serialVersionUID = 1L;
+    
+    public PGExterneReferenzAuslegung() {
+        
+    }
+    public PGExterneReferenzAuslegung(ExterneRef bFitzExterneRef) {
+        super(bFitzExterneRef);
+      }
 
     @Override
     public void setValue(String pgValue) throws SQLException {
