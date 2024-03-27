@@ -54,6 +54,7 @@ public class BPlanImporter {
 
     public enum Version {
         v5_1,
+        v5_1n,
         v5_3
     }
 
@@ -64,8 +65,11 @@ public class BPlanImporter {
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
         if (version==Version.v5_1) {
-            this.wfsFactory = new BFitzBPlanFactoryV5_1();
-        } else {
+            this.wfsFactory = new BFitzBPlanFactoryV5_1(false);
+        } else if (version==Version.v5_1) {
+            this.wfsFactory = new BFitzBPlanFactoryV5_1(true);
+        }
+        else {
             this.wfsFactory = new BFitzBPlanFactory();
         }
     }
@@ -383,8 +387,7 @@ public class BPlanImporter {
 
     public void importWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
 
-        List<BPlan> bPlans = null;
-
+        List<BPlan> bPlans = null;        
         try {
             final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
@@ -627,7 +630,11 @@ public class BPlanImporter {
                 ImportLogger logger = new ImportLogger();
                 if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
                     if (bplImport==null) {
-                        bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                        if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+                            bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                        } else {
+                            bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                        }
                     }
                     bplImport.importWFS(con, entry, logger);
                 } else {
@@ -659,7 +666,12 @@ public class BPlanImporter {
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            BPlanImporter bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            BPlanImporter bplImport;
+            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else {
+                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            }
             FPlanImporter fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");

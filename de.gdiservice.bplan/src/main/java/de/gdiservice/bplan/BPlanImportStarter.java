@@ -3,6 +3,7 @@ package de.gdiservice.bplan;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -160,6 +161,28 @@ public class BPlanImportStarter {
             }
         }
     }
+    
+    
+    public static boolean isSqlTypeSupported(Connection con, String type) throws SQLException {
+        ResultSet rs = null;
+        try {
+            rs = con.getMetaData().getTypeInfo();
+            while (rs.next()) {
+                if (rs.getString(1).equals(type)) {
+                    return true;
+                }
+            }  
+        } finally {
+            if (rs !=null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                }
+            }
+        }
+        return false;
+    }
+    
 
 
     public static Connection getConnection(DBConnectionParameter param) throws SQLException {
@@ -173,6 +196,9 @@ public class BPlanImportStarter {
         PGConnection pgconn = con.unwrap(PGConnection.class);
         pgconn.addDataType("\"xplan_gml\".\"xp_gemeinde\"", Gemeinde.class);
         pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenz\"", PGExterneReferenz.class);
+        if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+            pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenzauslegung\"", PGExterneReferenzAuslegung.class);
+        }
         pgconn.addDataType("\"xplan_gml\".\"xp_verbundenerplan\"", PGVerbundenerPlan.class);  
         pgconn.addDataType("geometry", JtsGeometry.class);
         return con;

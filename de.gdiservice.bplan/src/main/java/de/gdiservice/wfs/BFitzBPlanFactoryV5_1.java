@@ -18,11 +18,22 @@ import com.fasterxml.jackson.databind.ObjectReader;
 
 import de.gdiservice.bplan.BPlan;
 import de.gdiservice.bplan.ExterneRef;
+import de.gdiservice.bplan.ExterneRefAuslegung;
 import de.gdiservice.bplan.Gemeinde;
 import de.gdiservice.bplan.PGExterneReferenz;
+import de.gdiservice.bplan.PGExterneReferenzAuslegung;
 
 public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
+    
+    boolean usePGExterneReferenzAuslegung = false;
+    
+    private BFitzBPlanFactoryV5_1() {
+        
+    }
 
+    public BFitzBPlanFactoryV5_1(boolean usePGExterneReferenzAuslegung) {
+        this.usePGExterneReferenzAuslegung = usePGExterneReferenzAuslegung;
+    }
 
     @Override
     public BPlan build(SimpleFeature f) throws IOException {
@@ -91,14 +102,14 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
         
         String sExtenalRefs = (String) f.getAttribute("externereferenz");
         if (sExtenalRefs!=null) {
-            ExterneRef[] extRefs;
+            ExterneRefAuslegung[] extRefs;
             try {
-                extRefs = objectReader.readValue(sExtenalRefs, ExterneRef[].class);
+                extRefs = objectReader.readValue(sExtenalRefs, ExterneRefAuslegung[].class);
             } catch (IOException e) {
                throw new IllegalArgumentException("String \""+sExtenalRefs+"\" could not be parsed as an Array of externereferenz"); 
             }	
             if (extRefs != null && extRefs.length>0) {
-                PGExterneReferenz[] pgRefs = new PGExterneReferenz[extRefs.length];
+                PGExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGExterneReferenzAuslegung[extRefs.length] : new PGExterneReferenz[extRefs.length];
                 for (int i=0; i<extRefs.length; i++) {
                     String type = extRefs[i].getTyp();
                     if ("5000".equals(type) || "2900".equals(type) || "3100".equals(type)) {
@@ -114,6 +125,9 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
     }
 
 
+
+    
+    
 
     private String[] getPlanArten(String s) {
         if (s!=null) {

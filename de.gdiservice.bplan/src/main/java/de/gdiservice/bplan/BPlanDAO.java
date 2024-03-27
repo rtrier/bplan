@@ -252,7 +252,15 @@ public class BPlanDAO {
         try {
 
             bplan.gemeinde = getArray(rs.getArray(i++), Gemeinde[].class);
-            bplan.externeReferenzes = getArray(rs.getArray(i++), PGExterneReferenz[].class);          
+            
+            Array ar = rs.getArray(i++);
+            if (ar !=null) {
+                if ("\"xplan_gml\".\"xp_spezexternereferenzauslegung\"".equals(ar.getBaseTypeName())) {
+                    bplan.externeReferenzes = getArray(ar, PGExterneReferenzAuslegung[].class);
+                } else {
+                    bplan.externeReferenzes = getArray(ar, PGExterneReferenz[].class);
+                }
+            }
 
             bplan.inkrafttretensdatum = rs.getDate(i++);
             
@@ -290,18 +298,26 @@ public class BPlanDAO {
 
 
 
-    private static <T extends Object> T [] getArray(Array array, Class<? extends T[]> clasz) throws SQLException {
-        try {
-            if (array !=null) {
+    private static <T extends Object> T[] getArray(Array array, Class<? extends T[]> clasz) throws SQLException {
+
+        if (array != null) {
+            try {
                 Object[] objects = (Object[]) array.getArray();
-//                System.err.println(objects[0].getClass());
+                // System.err.println(objects[0].getClass());
+                if (objects.length>0 && objects[0].getClass().getName().equals(PGobject.class.getName())) {
+                    System.err.println(objects[0].getClass().getName());
+                    System.err.println(clasz.getName());
+                    throw new SQLException(
+                        "Fehler: SQLArray could'nt read, should be of class \"" + clasz.getSimpleName() + "\" but is PGobject, Register Class for SQLType "+array.getBaseTypeName());
+                }
                 return (objects != null) ? Arrays.copyOf(objects, objects.length, clasz) : null;
+            } catch (Exception ex) {
+                throw new SQLException(
+                            "Fehler: SQLArray could'nt read, should be of class \"" + clasz.getSimpleName() + "\", SQLType: "+ array.getBaseTypeName()+")", ex);
+                
             }
-            return null;
-        } 
-        catch (Exception ex) {
-            throw new SQLException("Fehler:" + clasz, ex);
         }
+        return null;
     }
 
     private static Array getPGArray(Connection con, String typeName, String[] objects) throws SQLException {    
