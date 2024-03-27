@@ -460,7 +460,11 @@ public class BPlanDAO {
 //                for (PGExterneReferenz exRef : bplan.externeReferenzes) {
 //                    System.err.println("\t"+exRef);
 //                }
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
+                if (bplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
+                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenzauslegung\"", bplan.externeReferenzes));
+                } else {
+                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
+                }
             } else {
                 stmt.setArray(i++, null);
             }        
