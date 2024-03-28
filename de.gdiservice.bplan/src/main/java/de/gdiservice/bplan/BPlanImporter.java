@@ -99,7 +99,7 @@ public class BPlanImporter {
             KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
 
             for (BPlan plan : bPlans) {        
-                logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
+                logger.info("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
                 try {
                     if (!isStelleResponsible(entry.stelle_id, plan)) {
                         throw new IllegalAccessException("Stelle mit Id \""+entry.stelle_id+"\" ist nicht für die Gemeinde " + Arrays.toString(plan.getGemeinde()) + " zuständig");
@@ -139,6 +139,7 @@ public class BPlanImporter {
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             BPlan teilPlan = teilPlaene.get(teilPlanNr);
                             BPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
+                            logger.info("Teilplaene: {} {}/{} {} {}", plan.getGml_id(), teilPlanNr, teilPlaene.size(), teilPlan.getName(), dbPlan==null ? "null" : dbPlan.getName());
                             Konvertierung konvertierung;
                             if (dbPlan == null) {
                                 // neuer BPlan

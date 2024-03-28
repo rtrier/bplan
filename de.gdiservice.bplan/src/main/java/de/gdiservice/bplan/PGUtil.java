@@ -35,5 +35,16 @@ public class PGUtil {
         }
         // return s==null || s.length()==0 ? null : (new SimpleDateFormat("yyyy-MM-dd")).parse(s);
     }
+    
+    
+    static String trim(String gemeindename) {
+        if (gemeindename.startsWith("\"")) {
+            gemeindename = gemeindename.substring(1);
+        }
+        if (gemeindename.endsWith("\"")) {
+            gemeindename = gemeindename.substring(0, gemeindename.length()-1);
+        }
+        return gemeindename;
+    }
 
 }

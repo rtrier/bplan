@@ -52,7 +52,6 @@ public class PGExterneReferenzAuslegung extends PGExterneReferenz {
         }
         this.object.typ = PGUtil.getString(t.getToken(i++));
         String nurzurauslegung = t.getToken(i);
-        System.err.println("nurzurauslegung="+nurzurauslegung);
         externeRefAuslegung.nurzurauslegung = nurzurauslegung.startsWith("t");
 
     }

@@ -38,14 +38,15 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
 
         ags  = t.getToken(0);
         rs  = t.getToken(1);
-        gemeindename = t.getToken(2);
-        if (gemeindename.startsWith("\"")) {
-            gemeindename = gemeindename.substring(1);
-        }
-        if (gemeindename.endsWith("\"")) {
-            gemeindename = gemeindename.substring(0, gemeindename.length()-1);
-        }
-        ortsteilname = t.getToken(3);
+        gemeindename = PGUtil.trim(t.getToken(2));
+//        if (gemeindename.startsWith("\"")) {
+//            gemeindename = gemeindename.substring(1);
+//        }
+//        if (gemeindename.endsWith("\"")) {
+//            gemeindename = gemeindename.substring(0, gemeindename.length()-1);
+//        }
+        // ortsteilname = t.getToken(3);
+        ortsteilname = PGUtil.trim(t.getToken(3));
         
         this.value = value;
     }	

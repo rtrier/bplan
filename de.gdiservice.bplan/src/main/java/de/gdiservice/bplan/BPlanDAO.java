@@ -70,7 +70,12 @@ public class BPlanDAO {
             }
 
             if (bplan.externeReferenzes != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
+                if (bplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
+                    stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", bplan.externeReferenzes));
+                } else {
+                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
+                }
+                    
             } else {
                 stmt.setArray(i++, null);
             }        
@@ -255,7 +260,8 @@ public class BPlanDAO {
             
             Array ar = rs.getArray(i++);
             if (ar !=null) {
-                if ("\"xplan_gml\".\"xp_spezexternereferenzauslegung\"".equals(ar.getBaseTypeName())) {
+//                logger.info("ar.getBaseTypeName()="+ar.getBaseTypeName());
+                if ("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"".equals(ar.getBaseTypeName())) {
                     bplan.externeReferenzes = getArray(ar, PGExterneReferenzAuslegung[].class);
                 } else {
                     bplan.externeReferenzes = getArray(ar, PGExterneReferenz[].class);
@@ -461,7 +467,7 @@ public class BPlanDAO {
 //                    System.err.println("\t"+exRef);
 //                }
                 if (bplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
-                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenzauslegung\"", bplan.externeReferenzes));
+                    stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", bplan.externeReferenzes));
                 } else {
                     stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
                 }
@@ -530,7 +536,7 @@ public class BPlanDAO {
             
             
             try {
-                logger.info("stmt={}", stmt);
+                logger.info("stmt={}", stmt.toString().substring(0, 240));
                 stmt.execute();
             }
             catch (SQLException ex) {
