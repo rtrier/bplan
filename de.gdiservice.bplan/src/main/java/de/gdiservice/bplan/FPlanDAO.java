@@ -49,7 +49,7 @@ public class FPlanDAO {
 
 
 
-    public void insert(FPlan bplan) throws SQLException {
+    public void insert(FPlan fplan) throws SQLException {
         PreparedStatement stmt = null;
 
         try {           
@@ -59,54 +59,58 @@ public class FPlanDAO {
 
             int i = 1;
 
-            stmt.setObject(i++, bplan.gml_id);
-            stmt.setString(i++, bplan.name);
-            stmt.setString(i++, bplan.nummer);
+            stmt.setObject(i++, fplan.gml_id);
+            stmt.setString(i++, fplan.name);
+            stmt.setString(i++, fplan.nummer);
 
 
-            if (bplan.gemeinde != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_gemeinde\"", bplan.gemeinde));
+            if (fplan.gemeinde != null) {
+                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_gemeinde\"", fplan.gemeinde));
             } else {
                 stmt.setArray(i++, null);
             }
 
-            if (bplan.externeReferenzes != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
+            if (fplan.externeReferenzes != null) {
+                if (fplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
+                    stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", fplan.externeReferenzes));
+                } else {
+                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", fplan.externeReferenzes));
+                }
             } else {
                 stmt.setArray(i++, null);
             }        
 
-            if (bplan.wirksamkeitsdatum != null) {
-                stmt.setDate(i++, new java.sql.Date(bplan.wirksamkeitsdatum.getTime()));
+            if (fplan.wirksamkeitsdatum != null) {
+                stmt.setDate(i++, new java.sql.Date(fplan.wirksamkeitsdatum.getTime()));
             } else {
                 stmt.setObject(i++, null);
             }
             
-            if (bplan.auslegungsstartdatum != null && bplan.auslegungsstartdatum.length>0) {
-                stmt.setArray(i++, con.createArrayOf("DATE", bplan.auslegungsstartdatum));
+            if (fplan.auslegungsstartdatum != null && fplan.auslegungsstartdatum.length>0) {
+                stmt.setArray(i++, con.createArrayOf("DATE", fplan.auslegungsstartdatum));
             } else {
                 stmt.setArray(i++, null);
             }
-            if (bplan.auslegungsenddatum != null && bplan.auslegungsenddatum.length>0) {
-                stmt.setArray(i++, con.createArrayOf("DATE", bplan.auslegungsenddatum));
+            if (fplan.auslegungsenddatum != null && fplan.auslegungsenddatum.length>0) {
+                stmt.setArray(i++, con.createArrayOf("DATE", fplan.auslegungsenddatum));
             } else {
                 stmt.setArray(i++, null);
             }
             
 
-            if (bplan.rechtsstand != null) {
+            if (fplan.rechtsstand != null) {
                 PGobject pgObject = new PGobject();
                 pgObject.setType("\"xplan_gml\".\"fp_rechtsstand\"");
-                pgObject.setValue(bplan.rechtsstand);
+                pgObject.setValue(fplan.rechtsstand);
                 stmt.setObject(i++, pgObject);
             } else {
                 stmt.setObject(i++, null);
             }
             
-            if (bplan.verfahren != null) {
+            if (fplan.verfahren != null) {
                 PGobject pgObject = new PGobject();
                 pgObject.setType("\"xplan_gml\".\"fp_verfahren\"");
-                pgObject.setValue(bplan.rechtsstand);
+                pgObject.setValue(fplan.rechtsstand);
                 stmt.setObject(i++, pgObject);
             } else {
                 stmt.setObject(i++, null);
@@ -114,34 +118,34 @@ public class FPlanDAO {
 
             // bplan.setPlanart((PGobject)rs.getObject(i++));
             //        System.out.println("bplan.planart "+bplan.planart);
-            if (bplan.planart !=null ) {
+            if (fplan.planart !=null ) {
                 PGobject pgObject = new PGobject();
                 pgObject.setType("\"xplan_gml\".\"fp_planart\"");
-                pgObject.setValue(bplan.planart);
+                pgObject.setValue(fplan.planart);
                 stmt.setObject(i++, pgObject);
             } else {
                 stmt.setObject(i++, null);
             }
 
-            if (bplan.geom!=null) {
-                stmt.setObject(i++, new JtsGeometry(bplan.geom));
+            if (fplan.geom!=null) {
+                stmt.setObject(i++, new JtsGeometry(fplan.geom));
             } else {
                 stmt.setString(i++, null);
             }
             
             
-            stmt.setObject(i++, bplan.konvertierung_id);
+            stmt.setObject(i++, fplan.konvertierung_id);
 
 
-            stmt.setObject(i++, bplan.internalid); 
+            stmt.setObject(i++, fplan.internalid); 
             
-            if (bplan.aendert != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", bplan.aendert));
+            if (fplan.aendert != null) {
+                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", fplan.aendert));
             } else {
                 stmt.setArray(i++, null);
             }
-            if (bplan.wurdegeaendertvon != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", bplan.wurdegeaendertvon));
+            if (fplan.wurdegeaendertvon != null) {
+                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", fplan.wurdegeaendertvon));
             } else {
                 stmt.setArray(i++, null);
             }
@@ -265,7 +269,17 @@ public class FPlanDAO {
         try {
 
             fplan.gemeinde = getArray(rs.getArray(i++), Gemeinde[].class);
-            fplan.externeReferenzes = getArray(rs.getArray(i++), PGExterneReferenz[].class);          
+            
+//            fplan.externeReferenzes = getArray(rs.getArray(i++), PGExterneReferenz[].class);
+            
+            Array ar = rs.getArray(i++);
+            if (ar !=null) {
+                if ("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"".equals(ar.getBaseTypeName())) {
+                    fplan.externeReferenzes = getArray(ar, PGExterneReferenzAuslegung[].class);
+                } else {
+                    fplan.externeReferenzes = getArray(ar, PGExterneReferenz[].class);
+                }
+            }
 
             fplan.wirksamkeitsdatum = rs.getDate(i++);
             
@@ -459,7 +473,11 @@ public class FPlanDAO {
 //                for (PGExterneReferenz exRef : bplan.externeReferenzes) {
 //                    System.err.println("\t"+exRef);
 //                }
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", fplan.externeReferenzes));
+                if (fplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
+                    stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", fplan.externeReferenzes));
+                } else {
+                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", fplan.externeReferenzes));
+                }                
             } else {
                 stmt.setArray(i++, null);
             }        

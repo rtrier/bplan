@@ -20,10 +20,21 @@ import de.gdiservice.bplan.FPlan;
 import de.gdiservice.bplan.ExterneRef;
 import de.gdiservice.bplan.Gemeinde;
 import de.gdiservice.bplan.PGExterneReferenz;
+import de.gdiservice.bplan.PGExterneReferenzAuslegung;
 
 public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
 
+    boolean usePGExterneReferenzAuslegung = false;
+    
+    @SuppressWarnings("unused")
+    private BFitzFPlanFactoryV5_1() {
+        
+    }
 
+    public BFitzFPlanFactoryV5_1(boolean usePGExterneReferenzAuslegung) {
+        this.usePGExterneReferenzAuslegung = usePGExterneReferenzAuslegung;
+    }
+    
     @Override
     public FPlan build(SimpleFeature f) throws IOException {
 
@@ -80,14 +91,14 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
             } catch (IOException e) {
                throw new IllegalArgumentException("String \""+sExtenalRefs+"\" could not be parsed as an Array of externereferenz"); 
             }	
-            if (extRefs != null && extRefs.length>0) {
-                PGExterneReferenz[] pgRefs = new PGExterneReferenz[extRefs.length];
+            if (extRefs != null && extRefs.length>0) {                
+                PGExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGExterneReferenzAuslegung[extRefs.length] : new PGExterneReferenz[extRefs.length];
                 for (int i=0; i<extRefs.length; i++) {
                     String type = extRefs[i].getTyp();
                     if ("5000".equals(type) || "2900".equals(type) || "3100".equals(type)) {
                         extRefs[i].typ = "9999";      
-                    }
-                    pgRefs[i] = new PGExterneReferenz(extRefs[i]);
+                    }                    
+                    pgRefs[i] = usePGExterneReferenzAuslegung ? new PGExterneReferenzAuslegung(extRefs[i]) : new PGExterneReferenz(extRefs[i]);
                 }
                 fplan.setExterneReferenzes(pgRefs);
                 // bplan.externeReferenzes = extRefs; // ="[{"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 1. Änderung des Bebauungsplans (438,49 KB)", "datum" : "2003-10-07", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 2. Änderung des Bebauungsplans (2,47 MB)", "datum" : "2012-04-03", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 3. Änderung des Bebauungsplans (2,3 MB)", "datum" : "2017-12-01", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Begründung zur 3. Änderung des Bebauungsplans (186,38 KB)", "datum" : "2017-12-01", "typ" : "1010"}]"

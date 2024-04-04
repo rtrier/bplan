@@ -641,7 +641,11 @@ public class BPlanImporter {
                 } else {
                     if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
                         if (fplImport==null) {
-                            fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+                                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                            } else {
+                                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                            }
                         }
                         fplImport.importWFS(con, entry, logger);
                     } else {
@@ -668,12 +672,14 @@ public class BPlanImporter {
 
         try {                
             BPlanImporter bplImport;
+            FPlanImporter fplImport;
             if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
                 bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             } else {
                 bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             }
-            FPlanImporter fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 

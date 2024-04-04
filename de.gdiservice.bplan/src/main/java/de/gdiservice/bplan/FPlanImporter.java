@@ -53,6 +53,7 @@ public class FPlanImporter {
 
     public enum Version {
         v5_1,
+        v5_1n,
         v5_3
     }
 
@@ -62,7 +63,11 @@ public class FPlanImporter {
         this.kvwmapUrl = kvwmapUrl;
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
-        this.wfsFactory = new BFitzFPlanFactoryV5_1();
+        if (version==Version.v5_1) {
+            this.wfsFactory = new BFitzFPlanFactoryV5_1(false);
+        } else if (version==Version.v5_1n) {
+            this.wfsFactory = new BFitzFPlanFactoryV5_1(true);
+        }        
         if (kvwmapLoginName==null || kvwmapPassword==null) {
             logger.error("kvwmapLoginName="+this.kvwmapLoginName+" or kvwmapPassword"+" is null", new Exception());
         }
@@ -591,8 +596,13 @@ public class FPlanImporter {
 
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
-        try {                
-            FPlanImporter bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+        try {         
+            FPlanImporter bplImport;
+            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else {
+                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            }
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
@@ -623,7 +633,12 @@ public class FPlanImporter {
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            FPlanImporter bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            FPlanImporter bplImport;
+            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else {
+                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            }
 
             LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
 
