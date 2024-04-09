@@ -177,10 +177,9 @@ public String toString() {
     return "ExterneRef [georefurl=" + georefurl + ", georefmimetype=" + georefmimetype + ", art=" + art
             + ", informationssystemurl=" + informationssystemurl + ", referenzname=" + referenzname + ", referenzurl="
             + referenzurl + ", referenzmimetype=" + referenzmimetype + ", beschreibung=" + beschreibung + ", datum="
-            + datum + ", typ=" + typ + "]";
+            + datum + ", typ=" + typ + ", nurzurauslegung=" + nurzurauslegung +"]";
 }
-  
-  
+    
 
 
 

@@ -47,8 +47,8 @@ public class WFSClient {
                 } catch (Exception e) {
                     e.printStackTrace();
                     if (importLogger!=null) {
-                        Object name = f.getAttribute("name");
-                        importLogger.addError("SimpleFeature \"" + name + "\" has an error: "+e.getMessage());
+                        Object gmlId = f.getAttribute("gml_id");
+                        importLogger.addError("SimpleFeature with gmlId=\"" + gmlId + "\" has an error: "+e.getMessage());
                     }
                 }
             } else {
