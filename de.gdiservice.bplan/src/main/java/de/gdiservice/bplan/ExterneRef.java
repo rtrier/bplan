@@ -21,6 +21,7 @@ public class ExterneRef {
   public String beschreibung;
   public Date datum;
   public String typ;
+  public Boolean nurzurauslegung;
   
   
   public String getGeorefurl() {
@@ -83,6 +84,15 @@ public class ExterneRef {
   public void setTyp(String typ) {
     this.typ = typ;
   }
+  public Boolean isNurzurauslegung() {
+      return nurzurauslegung;
+  }
+  public void setNurzurauslegung(Boolean nurzurauslegung) {
+      this.nurzurauslegung = nurzurauslegung;
+  }  
+  
+  
+  
   public static long getSerialversionuid() {
     return serialVersionUID;
   }
