@@ -449,6 +449,9 @@ public class BPlanImporter {
         if (a01 == null) {
             return (a02 == null) ? false : true;
         }
+        if (a02 == null) {
+            return true;
+        }
         if (a01.length != a02.length) {
             return true;
         }
