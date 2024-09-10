@@ -186,9 +186,16 @@ public class BPlanImporter {
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
                                 // konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
-                                if (teilPlan.inkrafttretensdatum!=null && succeded) {
-                                    konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
-                                }                                
+                                if (succeded) {
+                                    boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);
+                                    if (isLastPlan && teilPlan.auslegungsstartdatum!=null && teilPlan.auslegungsstartdatum.length>0) {
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.auslegungsenddatum[teilPlan.auslegungsstartdatum.length-1].getTime()));                                        
+                                    } else {
+                                        if (teilPlan.inkrafttretensdatum!=null) {
+                                            konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                        }
+                                    }
+                                }
                                 logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     

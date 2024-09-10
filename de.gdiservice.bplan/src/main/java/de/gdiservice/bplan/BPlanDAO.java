@@ -143,6 +143,7 @@ public class BPlanDAO {
                 stmt.execute();
             }
             catch (SQLException ex) {
+                logger.error("stmt: "+stmt.toString());
                 throw ex;
             }
 

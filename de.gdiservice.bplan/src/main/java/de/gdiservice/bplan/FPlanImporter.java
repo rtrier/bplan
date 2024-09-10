@@ -174,10 +174,17 @@ public class FPlanImporter {
                                 fplanDao.insert(teilPlan);
                                 con.commit();
                                 
-                                boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
-                                if (teilPlan.wirksamkeitsdatum!=null && succeded) {
-                                    konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
-                                }                                
+                                boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);   
+                                boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);
+                                if (succeded) {
+                                    if (isLastPlan && teilPlan.auslegungsstartdatum!=null && teilPlan.auslegungsstartdatum.length>0) {
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.auslegungsenddatum[teilPlan.auslegungsstartdatum.length-1].getTime()));                                        
+                                    } else {
+                                        if (teilPlan.wirksamkeitsdatum!=null) {
+                                            konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
+                                        }
+                                    }
+                                }
                                 logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     

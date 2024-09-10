@@ -16,7 +16,15 @@ public class PGUtil {
     
     
     static final String getStringValue(String s) {
-        return s == null ? "" : s.replaceAll("\"", "\"\""); 
+        if (s==null) {
+            return "";
+        } else {
+            // s = s.replaceAll(",", "%2C");
+            
+            return s.replaceAll("\"", "\"\"");
+//            return "\\\"" + s + "\\\"";
+        }
+//        return s == null ? "" : s.replaceAll("\"", "\"\""); 
     }
     
     static final String getDateValue(Date date) {
