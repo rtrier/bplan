@@ -178,7 +178,7 @@ public class FPlanImporter {
                                 boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);
                                 if (succeded) {
                                     if (isLastPlan && teilPlan.auslegungsstartdatum!=null && teilPlan.auslegungsstartdatum.length>0) {
-                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.auslegungsenddatum[teilPlan.auslegungsstartdatum.length-1].getTime()));                                        
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.auslegungsstartdatum[teilPlan.auslegungsstartdatum.length-1].getTime()));                                        
                                     } else {
                                         if (teilPlan.wirksamkeitsdatum!=null) {
                                             konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
