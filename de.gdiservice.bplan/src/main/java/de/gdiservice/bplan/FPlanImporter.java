@@ -542,7 +542,7 @@ public class FPlanImporter {
             logger.info(String.format("<>nummer %s %s", plan.nummer, dbPlan.nummer));
             return true;
         }
-        if (plan.planart != dbPlan.planart) {
+        if (hasChanged(plan.planart, dbPlan.planart)) {
             logger.info(String.format("<>planart %s %s", plan.planart, dbPlan.planart));
             return true;
         }

@@ -195,7 +195,8 @@ public class BPlanImportStarter {
 
         PGConnection pgconn = con.unwrap(PGConnection.class);
         pgconn.addDataType("\"xplan_gml\".\"xp_gemeinde\"", Gemeinde.class);
-        pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenz\"", PGExterneReferenz.class);
+        pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenz\"", PGExterneReferenz.class);        
+        pgconn.addDataType("\"xplan_gml\".\"so_planart\"", PG_SO_Planart.class);        
         if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
             pgconn.addDataType("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", PGExterneReferenzAuslegung.class);
         }
