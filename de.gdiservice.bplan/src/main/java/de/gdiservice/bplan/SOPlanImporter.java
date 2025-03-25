@@ -39,10 +39,10 @@ public class SOPlanImporter {
     final static Logger logger = LoggerFactory.getLogger(SOPlanImporter.class);
     
 
-    private String soplanTable;
-    private String konvertierungTable;
+    protected String soplanTable;
+    protected String konvertierungTable;
     
-    private String kvwmapUrl;
+    protected String kvwmapUrl;
     
     private String kvwmapLoginName;
     private String kvwmapPassword;
@@ -63,10 +63,14 @@ public class SOPlanImporter {
         this.kvwmapUrl = kvwmapUrl;
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
-        this.wfsFactory = new BFitzSOPlanFactoryV5_1(true);
+        this.wfsFactory = getWFSFactory(version);
         if (kvwmapLoginName==null || kvwmapPassword==null) {
             logger.error("kvwmapLoginName="+this.kvwmapLoginName+" or kvwmapPassword"+" is null", new Exception());
         }
+    }
+    
+    protected WFSFactory<SOPlan> getWFSFactory(Version version) {
+        return new BFitzSOPlanFactoryV5_1(true);
     }
     
     public void setTest(boolean isTest) {
@@ -75,15 +79,15 @@ public class SOPlanImporter {
     
 
 
-    public void updateSOPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<SOPlan> soPlans) throws SQLException  {
-        boolean autoCommit = con.getAutoCommit();
+    public void updateSOPlaene(Connection conWrite, Connection conRead, ImportLogger importLogger, ImportConfigEntry entry, List<SOPlan> soPlans) throws SQLException  {
+        boolean autoCommit = conWrite.getAutoCommit();
         if (autoCommit) {
-            con.setAutoCommit(false);
+            conWrite.setAutoCommit(false);
         }
 
         if (soPlans != null) {
-            SOPlanDAO soplanDao = new SOPlanDAO(con, soplanTable);
-            KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
+            SOPlanDAO soplanDao = new SOPlanDAO(conWrite, conRead, soplanTable);
+            KonvertierungDAO konvertierungDAO = new KonvertierungDAO(conWrite, konvertierungTable);
 
             for (SOPlan plan : soPlans) {        
                 logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
@@ -132,10 +136,10 @@ public class SOPlanImporter {
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             SOPlan teilPlan = teilPlaene.get(teilPlanNr);
                             SOPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
-                            Konvertierung konvertierung;
+                            Konvertierung konvertierung = null;
                             if (dbPlan == null) {
                                 // neuer SOPlan
-                                GemeindeDAO gemeindeDAO = new GemeindeDAO(con);
+                                GemeindeDAO gemeindeDAO = new GemeindeDAO(conWrite);
                                 de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
@@ -174,7 +178,7 @@ public class SOPlanImporter {
                                 Konvertierung dbKonvertierung = konvertierungDAO.insert(konvertierung);                    
                                 teilPlan.setKonvertierungId(dbKonvertierung.id);
                                 soplanDao.insert(teilPlan);
-                                con.commit();
+                                conWrite.commit();
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);   
                                 boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);
@@ -205,7 +209,7 @@ public class SOPlanImporter {
                                     
                                     logger.info("SOPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
-                                    con.commit();
+                                    conWrite.commit();
                                     
                                     boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
 //                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
@@ -226,7 +230,7 @@ public class SOPlanImporter {
                     }
                 } catch (Exception ex) {                    
                     try {
-                        con.rollback();
+                        conWrite.rollback();
                     } 
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
@@ -237,7 +241,7 @@ public class SOPlanImporter {
             }
         }
         if (autoCommit) {
-            con.setAutoCommit(autoCommit);
+            conWrite.setAutoCommit(autoCommit);
         }
     }
     
@@ -248,7 +252,7 @@ public class SOPlanImporter {
      * @param plan
      * @return
      */
-    private boolean isStelleResponsible(Integer stelle_id, SOPlan plan) {
+    protected boolean isStelleResponsible(Integer stelle_id, SOPlan plan) {
         de.gdiservice.bplan.Gemeinde[] gemeinden = plan.getGemeinde();
         if (gemeinden!=null) {
             for (de.gdiservice.bplan.Gemeinde gemeinde : gemeinden) {
@@ -374,11 +378,12 @@ public class SOPlanImporter {
         }
     }
 
-    public void importWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
+    public void importWFS(Connection conWrite, Connection conRead, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
 
         List<SOPlan> soPlans = null;
 
         try {
+//            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833&count=50";            
             final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";            
             importLogger.addLine("Reading WFS (SO-Plan): \""+ entry.onlineresource + "\"");
             soPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
@@ -388,7 +393,7 @@ public class SOPlanImporter {
             importLogger.addError("ERROR - Reading WFS (SO-Plan): \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
         }
 
-        updateSOPlaene(con, importLogger, entry, soPlans);
+        updateSOPlaene(conWrite, conRead, importLogger, entry, soPlans);
 
     }
 
@@ -434,7 +439,7 @@ public class SOPlanImporter {
         return false;
     }
     
-    public static boolean hasChanged(PGExterneReferenz[] a01, PGExterneReferenz[] a02) {
+    private static boolean hasChangedXX(PGExterneReferenz[] a01, PGExterneReferenz[] a02) {
         if (a01 == null) {
             return (a02 == null) ? false : true;
         }
@@ -479,8 +484,13 @@ public class SOPlanImporter {
     public static boolean hasChanged(
             de.gdiservice.bplan.Gemeinde[] gemeinden01, 
             de.gdiservice.bplan.Gemeinde[] gemeinden02) {
+        
+        
+        if (gemeinden01 == null && gemeinden02 == null) {
+            return false;
+        }
         if (gemeinden01 == null || gemeinden02 == null) {
-            throw new IllegalArgumentException("one Plan doesnt has gemeinden");
+            return true;                                                                                                                                                 
         }
         if (gemeinden01.length != gemeinden02.length) {
             return true;
@@ -512,7 +522,7 @@ public class SOPlanImporter {
             logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
             return true;
         }
-        if (hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
+        if (BPlanImporter.hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
             logger.info(String.format("<>Externereferenzes %s %s", plan.getExternereferenzes(), dbPlan.getExternereferenzes()));
             return true;
         }
@@ -567,8 +577,24 @@ public class SOPlanImporter {
             logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
             return true;
         }
-        if (hasChanged(plan.internalid, dbPlan.internalid)) {
-            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
+//        if (hasChanged(plan.internalid, dbPlan.internalid)) {
+//            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
+//            return true;
+//        }
+        
+        
+        if (hasChanged(plan.getUntergangsdatum(), dbPlan.getUntergangsdatum())) {
+            logger.info(String.format("<>untergangsdatum %s %s", plan.untergangsdatum, dbPlan.untergangsdatum));
+            return true;
+        }
+        
+        if (hasChanged(plan.getTechnHerstellDatum(), dbPlan.getTechnHerstellDatum())) {
+            logger.info(String.format("<>technHerstellDatum %s %s", plan.technHerstellDatum, dbPlan.technHerstellDatum));
+            return true;
+        }
+        
+        if (hasChanged(plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde)) {
+            logger.info(String.format("<>planaufstellendegemeinde %s %s", plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde));
             return true;
         }
         return false;
@@ -609,34 +635,44 @@ public class SOPlanImporter {
         System.out.println(sb);
     }
 
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {         
             SOPlanImporter bplImport;
-            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+            SOPlanNwmImporter bplNwmImport;
+            
+            if (BPlanImportStarter.isSqlTypeSupported(conWrite, "xp_spezexternereferenzauslegung")) {
                 bplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             } else {
                 bplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             }
+            
 
-            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);
                 System.err.println("StellenId: \""+entry.stelle_id+"\"");
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+                    ConfigReader.setJobStarted(conWrite, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                bplImport.importWFS(con, entry, logger);
+                if (entry.onlineresource.indexOf("nwm")>=0) {                    
+                    bplNwmImport.importWFS(conWrite, conRead, entry, logger);
+                } else {
+                    bplImport.importWFS(conWrite, conRead, entry, logger);
+                }
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+                System.err.printf("%S", "written");
                 
                 List<String> errors = logger.getErrors();
                 if (errors!=null && errors.size()>0) {
                     System.err.println(errors.get(i));
                 }
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+                    ConfigReader.setJobFinished(conWrite, (JobEntry)entry);
                 }
             }
         } catch (Exception ex) {
@@ -645,26 +681,26 @@ public class SOPlanImporter {
 
     }
     
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
             SOPlanImporter bplImport;
-            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+            if (BPlanImportStarter.isSqlTypeSupported(conWrite, "xp_spezexternereferenzauslegung")) {
                 bplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             } else {
                 bplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             }
 
-            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);
                 System.err.println("StellenId: \""+entry.stelle_id+"\"");
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+                    ConfigReader.setJobStarted(conWrite, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                bplImport.importWFS(con, entry, logger);
+                bplImport.importWFS(conWrite, conRead, entry, logger);
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 
                 List<String> errors = logger.getErrors();
@@ -672,7 +708,7 @@ public class SOPlanImporter {
                     sendErrors(errors, eMailSender, entry);
                 }
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+                    ConfigReader.setJobFinished(conWrite, (JobEntry)entry);
                 }
             }
         } catch (Exception ex) {
@@ -682,14 +718,16 @@ public class SOPlanImporter {
     }
 
     public static void runImport(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
-        Connection con = null;
+        Connection conWrite = null;
+        Connection conRead = null;
         try {
-            con = BPlanImportStarter.getConnection(dbParam);
+            conWrite = BPlanImportStarter.getConnection(dbParam);
+            conRead = BPlanImportStarter.getConnection(dbParam);
 
             try {
-                List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(con, "xplankonverter.import_services");
+                List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(conWrite, "xplankonverter.import_services");
                 
-                runImport(importConfigEntries, con, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                runImport(importConfigEntries, conWrite, conRead, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -698,9 +736,9 @@ public class SOPlanImporter {
         catch (Exception ex) {
             throw new IllegalArgumentException("DB-Verbinung konnte nicht hergestellt werden.", ex);
         } finally {
-            if (con!=null) {
+            if (conWrite!=null) {
                 try {
-                    con.close();
+                    conWrite.close();
                 } catch (SQLException e) {}
             }
         }
@@ -738,9 +776,6 @@ public class SOPlanImporter {
             super(message, cause);
         }
     }
-
-
-
 
 
 }

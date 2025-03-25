@@ -1,5 +1,6 @@
 package de.gdiservice.bplan;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
@@ -43,6 +44,9 @@ public class SOPlan {
 //    String rechtsstand; //="4000"
     Date genehmigungsdatum; //="2018-01-05"
     
+    LocalDate untergangsdatum; // neu
+    LocalDate technHerstellDatum; // neu
+    
     Date[] auslegungsstartdatum;
     Date[] auslegungsenddatum;
     
@@ -55,6 +59,8 @@ public class SOPlan {
     PGVerbundenerPlan[] wurdegeaendertvon;    
     
     Integer konvertierung_id;
+    
+    Gemeinde[] planaufstellendegemeinde; // neu
     
     
     
@@ -121,6 +127,19 @@ public class SOPlan {
     public void setAuslegungsenddatum(Date auslegungsenddatum) {
         this.auslegungsenddatum = new Date[] {auslegungsenddatum};
     }    
+    
+    public void setUntergangsdatum(LocalDate localDate) {
+        this.untergangsdatum = localDate;
+    }
+    public LocalDate getUntergangsdatum() {
+        return untergangsdatum;
+    }
+    public void setTechnHerstellDatum(LocalDate localDate) {
+        this.technHerstellDatum = localDate;
+    }
+    public LocalDate getTechnHerstellDatum() {
+        return technHerstellDatum;
+    }
     
     public Gemeinde[] getGemeinde() {
         return gemeinde;
@@ -189,6 +208,12 @@ public class SOPlan {
         }
     }
     
+    public Gemeinde[] getPlanaufstellendegemeinde() {
+        return planaufstellendegemeinde;
+    }
+    public void setPlanaufstellendegemeinde(Gemeinde[] planaufstellendegemeinde) {
+        this.planaufstellendegemeinde = planaufstellendegemeinde;
+    }
     
     public void setAendert(VerbundenerPlan verbundenerPlan) {
         this.aendert = new PGVerbundenerPlan[] {new PGVerbundenerPlan(verbundenerPlan)};
@@ -293,6 +318,7 @@ public class SOPlan {
                 + planart + ", genehmigungsdatum=" + genehmigungsdatum
                 + ", gemeinde=" + gemeinde + ", externereferenz=" + Arrays.toString(externeReferenzes) + ", geom=" + geom + "]";
     }
+    
     
 
 

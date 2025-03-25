@@ -38,7 +38,7 @@ public class PGVerbundenerPlan extends PGobject {
         this.object.planname = PGUtil.getString(t.getToken(i++));
         
         String rechtscharakterToken = t.getToken(i++);
-        this.object.rechtscharakter = (rechtscharakterToken.length()==0) ? null : VerbundenerPlan.RechtscharakterPlanaenderung.get(Integer.parseInt(rechtscharakterToken));
+        this.object.rechtscharakter = (rechtscharakterToken.length()==0) ? null : VerbundenerPlan.RechtscharakterPlanaenderung.get(rechtscharakterToken);
         this.object.nummer = PGUtil.getString(t.getToken(i++));
         this.object.verbundenerplan = PGUtil.getString(t.getToken(i++));
     
@@ -49,13 +49,25 @@ public class PGVerbundenerPlan extends PGobject {
         StringBuilder sb = new StringBuilder();
 //        sb.append("\"(\\\"");    
 //        sb.append("(\"\"\"").append("Am Dpo4").append("\"\"\"").append(",");;
-        sb.append("(\"").append(PGUtil.getStringValue(this.object.planname)).append("\",");
+        
+//        if (object == null) {
+//            return null
+//        }
+        
+        sb.append("(");
+        if (this.object.planname != null) {
+            sb.append("\"").append(PGUtil.getStringValue(this.object.planname)).append("\"");
+        }
+        sb.append(",");
         
         if (this.object.rechtscharakter != null) {
             sb.append("\"").append(PGUtil.getStringValue(this.object.rechtscharakter.getArt().toString())).append("\"");
         };
         sb.append(',');
-        sb.append("\"").append(PGUtil.getStringValue(this.object.nummer)).append("\",");
+        if (this.object.nummer != null) {
+            sb.append("\"").append(PGUtil.getStringValue(this.object.nummer)).append("\"");
+        }
+        sb.append(',');
         sb.append("\"").append(PGUtil.getStringValue(this.object.verbundenerplan)).append("\"");
         sb.append(")");
         // sb.append("\\\")");

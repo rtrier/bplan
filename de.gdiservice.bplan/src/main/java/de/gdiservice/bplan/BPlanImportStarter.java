@@ -194,14 +194,21 @@ public class BPlanImportStarter {
         Connection con =  DriverManager.getConnection(param.getUrl(), props);
 
         PGConnection pgconn = con.unwrap(PGConnection.class);
+        
         pgconn.addDataType("\"xplan_gml\".\"xp_gemeinde\"", Gemeinde.class);
+        pgconn.addDataType("\"xplan_gml\".\"xp_planaufstellendegemeinde\"", PlanaufstellendeGemeinde.class);
         pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenz\"", PGExterneReferenz.class);        
-        pgconn.addDataType("\"xplan_gml\".\"so_planart\"", PG_SO_Planart.class);        
+        pgconn.addDataType("\"xplan_gml\".\"so_planart\"", PG_SO_Planart.class);
+        pgconn.addDataType("\"xplan_gml\".\"bp_status\"", CodeList.class);        
+        pgconn.addDataType("\"xplan_gml\".\"fp_status\"", CodeList.class);        
+        pgconn.addDataType("\"bp_status\"", CodeList.class);        
+//        status xplan_gml.bp_status
         if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
             pgconn.addDataType("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", PGExterneReferenzAuslegung.class);
         }
         pgconn.addDataType("\"xplan_gml\".\"xp_verbundenerplan\"", PGVerbundenerPlan.class);  
         pgconn.addDataType("geometry", JtsGeometry.class);
+        System.err.println("getConnection!!!!!!!!!!!!!!!!!!!!!!!");
         return con;
     }
 

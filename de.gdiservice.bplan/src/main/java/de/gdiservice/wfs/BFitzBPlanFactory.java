@@ -3,6 +3,8 @@ package de.gdiservice.wfs;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -40,8 +42,8 @@ public class BFitzBPlanFactory implements WFSFactory<BPlan>  {
 			String sDate = (String) f.getAttribute("inkrafttretensdatum");
 			if (sDate!=null) {
 				try {
-					bplan.setInkrafttretensdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
-				} catch (ParseException e) {
+					bplan.setInkrafttretensdatum(LocalDate.parse(sDate));
+				} catch (DateTimeParseException e) {
 					throw new IOException("Konnt Datum noicht \""+sDate+"\" parsen");
 				} //="2018-01-05"
 			}

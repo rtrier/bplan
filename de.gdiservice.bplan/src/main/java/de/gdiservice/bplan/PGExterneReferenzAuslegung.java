@@ -69,7 +69,10 @@ public class PGExterneReferenzAuslegung extends PGExterneReferenz {
         sb.append(PGUtil.getStringValue(this.object.referenzname)).append(',');
         sb.append(PGUtil.getStringValue(this.object.referenzurl)).append(',');
         sb.append(getReferenzmimetypeValue(this.object.referenzmimetype)).append(',');
-        sb.append('"').append(PGUtil.getStringValue(this.object.beschreibung)).append("\",");
+        if (this.object.beschreibung != null) {            
+            sb.append('"').append(PGUtil.getStringValue(this.object.beschreibung)).append("\"");
+        }
+        sb.append(",");
         sb.append(PGUtil.getDateValue(this.object.datum)).append(',');
         sb.append(PGUtil.getStringValue(this.object.typ)).append(',');
         if (this.object instanceof ExterneRefAuslegung) {
