@@ -15,7 +15,7 @@ public class PG_SO_Planart extends PGobject implements Serializable, Cloneable {
    */
   private static final long serialVersionUID = 1L;
   
-  String codespace = "http://bauleitplaene-mv.de/codelist/SO_PlanArt/SO_PlanArt.xml"; 
+  String codespace = "http://bauleitplaene-mv.de/codelist/SO_PlanArt/SO_PlanArt.xml";
   String value;
   
   

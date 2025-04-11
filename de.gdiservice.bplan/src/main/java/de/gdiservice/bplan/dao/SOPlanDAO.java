@@ -36,12 +36,14 @@ public class SOPlanDAO {
 
     final static String KEY_COLLUMN = "gml_id";
 
-    private final Connection con;
+    private final Connection conWrite;
+    private final Connection conRead;
 
     private final String tableName;
 
-    public SOPlanDAO(Connection con, String tableName) {
-        this.con = con;
+    public SOPlanDAO(Connection conWrite, Connection conRead, String tableName) {
+        this.conWrite = conWrite;
+        this.conRead = conRead;
         this.tableName = tableName;
     }
 
@@ -54,7 +56,7 @@ public class SOPlanDAO {
         try {           
             String sql = DBUtil.getInsertSQLString(tableName, COLLUMN_NAMES);
             logger.debug(sql);
-            stmt = con.prepareStatement(sql);
+            stmt = conWrite.prepareStatement(sql);
 
             int i = 1;
 
@@ -64,16 +66,16 @@ public class SOPlanDAO {
 
 
             if (soplan.gemeinde != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_gemeinde\"", soplan.gemeinde));
+                stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_gemeinde\"", soplan.gemeinde));
             } else {
                 stmt.setArray(i++, null);
             }
 
             if (soplan.externeReferenzes != null) {
                 if (soplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
-                    stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", soplan.externeReferenzes));
+                    stmt.setArray(i++, conWrite.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", soplan.externeReferenzes));
                 } else {
-                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", soplan.externeReferenzes));
+                    stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", soplan.externeReferenzes));
                 }
             } else {
                 stmt.setArray(i++, null);
@@ -129,7 +131,7 @@ public class SOPlanDAO {
             if (soplan.geom!=null) {
                 stmt.setObject(i++, new JtsGeometry(soplan.geom));
             } else {
-                stmt.setString(i++, null);
+                stmt.setObject(i++, null);
             }
             
             
@@ -139,12 +141,12 @@ public class SOPlanDAO {
             stmt.setObject(i++, soplan.internalid); 
             
             if (soplan.aendert != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.aendert));
+                stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.aendert));
             } else {
                 stmt.setArray(i++, null);
             }
             if (soplan.wurdegeaendertvon != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.wurdegeaendertvon));
+                stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.wurdegeaendertvon));
             } else {
                 stmt.setArray(i++, null);
             }
@@ -175,7 +177,7 @@ public class SOPlanDAO {
         try {    
             String sql = DBUtil.getSelectSQLString(tableName, COLLUMN_NAMES, new String[]  {"gml_id=?"});      
             logger.debug(sql);
-            stmt = con.prepareStatement(sql);
+            stmt = conRead.prepareStatement(sql);
             stmt.setObject(1, gmlId);
             rs = stmt.executeQuery();
             if (rs.next()) {
@@ -203,7 +205,7 @@ public class SOPlanDAO {
              String sql = DBUtil.getSelectSQLString(tableName, COLLUMN_NAMES, new String[]  {"internalid like ? or gml_id=?"});
              sql = sql + " order by internalid";
              logger.debug(sql);
-             stmt = con.prepareStatement(sql);
+             stmt = conRead.prepareStatement(sql);
              stmt.setObject(1, gmlId.toString()+"%");
              stmt.setObject(2, gmlId);
              rs = stmt.executeQuery();
@@ -236,7 +238,7 @@ public class SOPlanDAO {
         Statement stmt = null;
         ResultSet rs = null;
         try {      
-            stmt = con.createStatement();
+            stmt = conRead.createStatement();
             String sql = DBUtil.getSelectSQLString(tableName, COLLUMN_NAMES, whereClauses, maxCount);
             logger.debug(sql);
             rs = stmt.executeQuery(sql);
@@ -383,7 +385,7 @@ public class SOPlanDAO {
 
     @SuppressWarnings("unused")
     private void truncate() throws SQLException {
-        Statement stmt = con.createStatement();
+        Statement stmt = conWrite.createStatement();
         stmt.execute("truncate table rtr_test.bp_plan");
     }
 
@@ -429,7 +431,7 @@ public class SOPlanDAO {
         PreparedStatement stmt = null;
         String result = null;
         try {
-            stmt = con.prepareStatement("select public.st_isvalidreason(?)");
+            stmt = conWrite.prepareStatement("select public.st_isvalidreason(?)");
             WKTWriter writer = new WKTWriter(2);
             stmt.setObject(1, writer.write(geom), Types.OTHER);
             ResultSet rs = stmt.executeQuery();
@@ -451,8 +453,8 @@ public class SOPlanDAO {
 
         try {           
             String sql = DBUtil.getUpdateSQLString(tableName, COLLUMN_NAMES, KEY_COLLUMN);
-            logger.debug(sql);
-            stmt = con.prepareStatement(sql);
+//            logger.debug(sql);
+            stmt = conWrite.prepareStatement(sql);
 
             int i = 1;
 
@@ -462,7 +464,7 @@ public class SOPlanDAO {
 
 
             if (soplan.gemeinde != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_gemeinde\"", soplan.gemeinde));
+                stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_gemeinde\"", soplan.gemeinde));
             } else {
                 stmt.setArray(i++, null);
             }
@@ -473,9 +475,9 @@ public class SOPlanDAO {
 //                    System.err.println("\t"+exRef);
 //                }
                 if (soplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
-                    stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", soplan.externeReferenzes));
+                    stmt.setArray(i++, conWrite.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", soplan.externeReferenzes));
                 } else {
-                    stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", soplan.externeReferenzes));
+                    stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", soplan.externeReferenzes));
                 }                
             } else {
                 stmt.setArray(i++, null);
@@ -528,7 +530,7 @@ public class SOPlanDAO {
             if (soplan.geom!=null) {
                 stmt.setObject(i++, new JtsGeometry(soplan.geom));
             } else {
-                stmt.setString(i++, null);
+                stmt.setObject(i++, null);
             }
             stmt.setObject(i++, soplan.konvertierung_id);
             
@@ -536,12 +538,12 @@ public class SOPlanDAO {
             stmt.setObject(i++, soplan.internalid); 
             
             if (soplan.aendert != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.aendert));
+                stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.aendert));
             } else {
                 stmt.setArray(i++, null);
             }
             if (soplan.wurdegeaendertvon != null) {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.wurdegeaendertvon));
+                stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.wurdegeaendertvon));
             } else {
                 stmt.setArray(i++, null);
             }
@@ -552,10 +554,10 @@ public class SOPlanDAO {
             
             
             try {
-                logger.info("stmt={}", stmt);
                 stmt.execute();
             }
             catch (SQLException ex) {
+                logger.info("stmt={}", stmt);
                 logger.error("Fehler writing: \""+soplan+"\"", ex);
                 throw ex;
             }

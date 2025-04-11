@@ -32,12 +32,12 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
 
     @Override
     public void setValue(String value) throws SQLException {
-        
+        logger.debug("Gemeinde.setValue(\""+value+"\")");
         String sqlString = PGtokenizer.removePara(PGtokenizer.removeCurlyBrace(value));
         PGtokenizer t = new PGtokenizer( sqlString, ',');
 
-        ags  = t.getToken(0);
-        rs  = t.getToken(1);
+        ags  = PGUtil.trim(t.getToken(0));
+        rs  = PGUtil.trim(t.getToken(1));
         gemeindename = PGUtil.trim(t.getToken(2));
 //        if (gemeindename.startsWith("\"")) {
 //            gemeindename = gemeindename.substring(1);
@@ -51,13 +51,54 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
         this.value = value;
     }	
 
-    @Override
-    public String getValue() {		
-        final String v = "(" + this.ags + "," + this.rs + ",\"" + this.gemeindename + "\",\"" + this.ortsteilname+ "\")";
-        return v;
+    
+    public String getValue() {         
+        StringBuilder sb = new StringBuilder();
+        sb.append("(");
+        if (this.ags != null) {
+            sb.append(this.ags);
+        }
+        sb.append(",");
+        if (this.rs != null) {
+            sb.append(this.rs);
+        }
+        sb.append(",\"");
+        if (this.gemeindename != null) {
+            sb.append(this.gemeindename);
+        }
+        sb.append("\",\"");
+        if (this.ortsteilname!= null && this.ortsteilname.length()>0) {
+            sb.append(this.ortsteilname);
+        }
+        sb.append("\")");
+//        final String v = "(" + this.ags  + "," + this.rs + ",\"" + this.gemeindename + "\",\"" + this.ortsteilname+ "\")";
+//        return v;
+        return sb.toString();
     }	
 
-
+    public String getValueFail() {         
+        StringBuilder sb = new StringBuilder();
+        sb.append("(");
+        if (this.ags != null) {
+            sb.append(this.ags);
+        }
+        sb.append(",");
+        if (this.rs != null) {
+            sb.append(this.rs);
+        }
+        sb.append(",");
+        if (this.gemeindename != null) {
+            sb.append(this.gemeindename);
+        }
+        sb.append(",");
+        if (this.ortsteilname!= null) {
+            sb.append(this.ortsteilname);
+        }
+        sb.append(")");
+//        final String v = "(" + this.ags  + "," + this.rs + ",\"" + this.gemeindename + "\",\"" + this.ortsteilname+ "\")";
+//        return v;
+        return sb.toString();
+    }   
 
 
 

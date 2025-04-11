@@ -9,7 +9,7 @@
 	<properties>
 		<jackson-version>2.12.1</jackson-version>
 		<geotools-version>25.0</geotools-version>
-		<postgresql-version>42.6.0</postgresql-version>
+		<postgresql-version>42.7.5</postgresql-version>
 		<quartz-scheduler-version>2.3.2</quartz-scheduler-version>
 	</properties>
 	<build>
@@ -60,7 +60,17 @@
 	</build>
 
 	<dependencies>
-
+<dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+    <version>4.5.14</version>
+</dependency>
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>3.48.3</version>
+      
+    </dependency>
 		<dependency>
 			<groupId>com.sun.mail</groupId>
 			<artifactId>jakarta.mail</artifactId>
@@ -76,7 +86,6 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
 			<version>1.7.30</version>
-
 		</dependency>
 
 		<dependency>

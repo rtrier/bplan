@@ -6,9 +6,13 @@ import java.text.ParseException;
 
 import org.postgresql.util.PGobject;
 import org.postgresql.util.PGtokenizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class PGExterneReferenz extends PGobject implements Serializable, Cloneable {
+    
+    final static Logger logger = LoggerFactory.getLogger(PGExterneReferenz.class);
   
   /**
    * 
@@ -53,7 +57,8 @@ public class PGExterneReferenz extends PGobject implements Serializable, Cloneab
 		String referenzmimetypeToken = t.getToken(i++);
 		this.object.referenzmimetype = referenzmimetypeToken.length()==0 ? null : new Referenzmimetype(referenzmimetypeToken);
 		
-		this.object.beschreibung = PGUtil.getString(t.getToken(i++));		
+		this.object.beschreibung = PGUtil.getString(t.getToken(i++));
+		
 		String sDatum = t.getToken(i++);
 		try {			
 		  this.object.datum = PGUtil.getDate(sDatum);		
@@ -83,7 +88,11 @@ public class PGExterneReferenz extends PGobject implements Serializable, Cloneab
 		sb.append(PGUtil.getStringValue(this.object.referenzname)).append(',');
 		sb.append(PGUtil.getStringValue(this.object.referenzurl)).append(',');
 		sb.append(getReferenzmimetypeValue(this.object.referenzmimetype)).append(',');
-		sb.append('"').append(PGUtil.getStringValue(this.object.beschreibung)).append("\",");
+		
+		if (this.object.beschreibung != null) {
+		    sb.append('"').append(PGUtil.getStringValue(this.object.beschreibung)).append("\"");
+		}
+		sb.append(",");
 		sb.append(PGUtil.getDateValue(this.object.datum)).append(',');
 		sb.append(PGUtil.getStringValue(this.object.typ));
 		
@@ -111,17 +120,17 @@ public class PGExterneReferenz extends PGobject implements Serializable, Cloneab
         if (this == obj)
             return true;
         if (getClass() != obj.getClass()) {
-            System.err.println("PGExterneReferenz false01");
+            logger.debug("PGExterneReferenz false01");
             return false;
         }
         PGExterneReferenz other = (PGExterneReferenz) obj;
         if (object == null) {
             if (other.object != null) {
-                System.err.println("PGExterneReferenz false02");
+                logger.debug("PGExterneReferenz false02");
                 return false;
             }
         } else if (!object.equals(other.object)) {
-            System.err.println("PGExterneReferenz false03");
+            logger.debug("PGExterneReferenz false03");
             return false;
         }
         return true;

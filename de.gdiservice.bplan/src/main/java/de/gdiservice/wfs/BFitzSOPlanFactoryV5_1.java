@@ -3,6 +3,8 @@ package de.gdiservice.wfs;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
 
 import org.locationtech.jts.geom.Geometry;
@@ -14,12 +16,14 @@ import org.postgresql.util.PGtokenizer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import de.gdiservice.bplan.ExterneRef;
 import de.gdiservice.bplan.Gemeinde;
 import de.gdiservice.bplan.PGExterneReferenz;
 import de.gdiservice.bplan.PGExterneReferenzAuslegung;
 import de.gdiservice.bplan.PG_SO_Planart;
+import de.gdiservice.bplan.PlanaufstellendeGemeinde;
 import de.gdiservice.bplan.SOPlan;
 
 public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
@@ -83,9 +87,15 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
         }
 
         String sGemeinde = (String) f.getAttribute("gemeinde");
-        if (sGemeinde!=null) {
-            Gemeinde gemeinde = objectReader.readValue(sGemeinde, Gemeinde.class);		
-            soplan.setGemeinde ( new Gemeinde[] {gemeinde} ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
+        if (sGemeinde!=null ) {
+            Gemeinde[] gemeinden = null;
+            if (sGemeinde.startsWith("[")) {
+                gemeinden = objectReader.readValue(sGemeinde, Gemeinde[].class);
+            } else {
+                Gemeinde gemeinde = objectReader.readValue(sGemeinde, Gemeinde.class);
+                gemeinden = new Gemeinde[] {gemeinde};
+            }
+            soplan.setGemeinde ( gemeinden ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
         }
 
         Geometry geom = (Geometry)f.getDefaultGeometry();        
@@ -101,7 +111,7 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
         }
         
         String sExtenalRefs = (String) f.getAttribute("externereferenz");
-        if (sExtenalRefs!=null) {
+        if (sExtenalRefs!=null && sExtenalRefs.length()>0) {
             ExterneRef[] extRefs;
             try {
                 extRefs = objectReader.readValue(sExtenalRefs, ExterneRef[].class);
@@ -120,6 +130,40 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
                 soplan.setExterneReferenzes(pgRefs);
                 // bplan.externeReferenzes = extRefs; // ="[{"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 1. Änderung des Bebauungsplans (438,49 KB)", "datum" : "2003-10-07", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 2. Änderung des Bebauungsplans (2,47 MB)", "datum" : "2012-04-03", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 3. Änderung des Bebauungsplans (2,3 MB)", "datum" : "2017-12-01", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Begründung zur 3. Änderung des Bebauungsplans (186,38 KB)", "datum" : "2017-12-01", "typ" : "1010"}]"
             }
+            
+            
+            String sUntergangsdatum = GeolexBPlanFactory.getAsString(f, "untergangsdatum");
+            if (sUntergangsdatum!=null && sUntergangsdatum.trim().length()>0) {
+                
+                sUntergangsdatum = PGtokenizer.removeCurlyBrace(sUntergangsdatum);
+                try {
+                    soplan.setUntergangsdatum( LocalDate.parse(sUntergangsdatum));
+                } catch (DateTimeParseException e) {
+                    throw new IOException("Konnt Untergangsdatum nicht \""+sUntergangsdatum+"\" parsen");
+                }
+            } 
+            String sTechnHerstellDatum = GeolexBPlanFactory.getAsString(f, "untergangsdatum");
+            if (sTechnHerstellDatum!=null && sTechnHerstellDatum.trim().length()>0) {
+                
+                sTechnHerstellDatum = PGtokenizer.removeCurlyBrace(sTechnHerstellDatum);
+                try {
+                    soplan.setTechnHerstellDatum( LocalDate.parse(sTechnHerstellDatum));
+                } catch (DateTimeParseException e) {
+                    throw new IOException("Konnt TechnHerstellDatum nicht \""+sTechnHerstellDatum+"\" parsen");
+                }
+            } 
+            
+            
+            String sPlanaufstellendegemeinde = GeolexBPlanFactory.getAsString(f, "planaufstellendegemeinde");
+            if (sPlanaufstellendegemeinde!=null) {
+                try {
+                    PlanaufstellendeGemeinde gemeinde = objectReader.readValue(sPlanaufstellendegemeinde, PlanaufstellendeGemeinde.class);
+                    soplan.setPlanaufstellendegemeinde ( new PlanaufstellendeGemeinde[] {gemeinde} ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
+                } catch (MismatchedInputException ex) {
+                    throw new IllegalArgumentException("Konnte den String \""+sPlanaufstellendegemeinde+"\" für planaufstellendegemeinde nicht als JSON interpretieren.", ex);
+                }
+            } 
+            
         }
         return soplan;
     }
@@ -129,6 +173,7 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
     private PG_SO_Planart getPlanArt(String s) {
         if (s!=null) {
             s = PGtokenizer.removeCurlyBrace(s);
+            s = PGtokenizer.removeBox(s);
             String[] sArray = s.split(",");
             if (sArray.length==1) { 
                 return new PG_SO_Planart(sArray[0]);

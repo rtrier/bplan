@@ -15,22 +15,31 @@ public class ImportJobRunner {
     final static Logger logger = LoggerFactory.getLogger(ImportJobRunner.class);
     
     public static void start(DBConnectionParameter dbParam, EMailSender emailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
-        Connection con = null;
+        Connection conWrite = null;
+        Connection conRead = null;
         try {
-            con = BPlanImportStarter.getConnection(dbParam);
+            conWrite = BPlanImportStarter.getConnection(dbParam);
+            conRead = BPlanImportStarter.getConnection(dbParam);
             
-            List<JobEntry> l = ConfigReader.readJobs(con, kvwmapUrl);
+            List<JobEntry> l = ConfigReader.readJobs(conWrite, kvwmapUrl);
             if (l!=null && l.size()>0) {                
-                BPlanImporter.runImport(l, con, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                BPlanImporter.runImport(l, conWrite, conRead, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
             }
         }
         catch (Exception ex) {
             logger.error("error running Observer", ex);
         }
         finally {
-            if (con != null) {
+            if (conWrite != null) {
                 try {
-                    con.close();
+                    conWrite.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (conRead != null) {
+                try {
+                    conRead.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }

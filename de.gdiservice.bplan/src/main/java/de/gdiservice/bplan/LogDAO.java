@@ -18,6 +18,9 @@ public class LogDAO {
             "time", "stelle_id", "protocol"
     };
 
+    final static String[] COLLUMN_NAMES_WITHOUT_StelleId = new String[] {
+            "time", "protocol"
+    };
 
     private final Connection con;
     private final String tableName;
@@ -27,6 +30,35 @@ public class LogDAO {
         this.tableName = tableName;
     }
 
+    
+    public void insert(OffsetDateTime time, String text) throws SQLException {
+        
+        PreparedStatement stmt = null;
+
+        try {           
+            String sql = DBUtil.getInsertSQLString(tableName, COLLUMN_NAMES_WITHOUT_StelleId);
+            stmt = con.prepareStatement(sql);
+
+            int i = 1;
+
+            stmt.setObject(i++, time);
+            stmt.setString(i++, text);
+            logger.info("insertLog {}", text);
+            logger.info("insertLog {}", stmt);
+            try {
+                stmt.execute();
+            }
+            catch (SQLException ex) {
+                ex.printStackTrace();
+                throw ex;
+            }
+        }
+        finally {
+            if (stmt!=null) {
+                try { stmt.close(); } catch (SQLException e) {}
+            }
+        }
+    }    
 
 
     public void insert(OffsetDateTime time, int stellenId, String text) throws SQLException {
@@ -46,6 +78,9 @@ public class LogDAO {
             logger.info("insertLog {}", stmt);
             try {
                 stmt.execute();
+                if (!con.getAutoCommit()) {
+                    con.commit();
+                }
             }
             catch (SQLException ex) {
                 ex.printStackTrace();

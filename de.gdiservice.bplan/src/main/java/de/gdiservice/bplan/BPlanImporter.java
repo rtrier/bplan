@@ -7,7 +7,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -40,10 +39,10 @@ public class BPlanImporter {
     final static Logger logger = LoggerFactory.getLogger(BPlanImporter.class);
     
 
-    private String bplanTable;
-    private String konvertierungTable;
+    protected String bplanTable;
+    protected String konvertierungTable;
     
-    private String kvwmapUrl;
+    protected String kvwmapUrl;
     
     private String kvwmapLoginName;
     private String kvwmapPassword;
@@ -55,7 +54,8 @@ public class BPlanImporter {
     public enum Version {
         v5_1,
         v5_1n,
-        v5_3
+        v5_3,
+        v_Geoplex
     }
 
     public BPlanImporter(String konvertierungTable, String bplanTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
@@ -64,14 +64,19 @@ public class BPlanImporter {
         this.kvwmapUrl = kvwmapUrl;
         this.kvwmapLoginName = kvwmapLoginName;
         this.kvwmapPassword = kvwmapPassword;
+        this.wfsFactory = getWFSFactory(version);
+    }
+    
+    protected WFSFactory<BPlan> getWFSFactory(Version version) {
+        WFSFactory<BPlan> wfsFactory = null;
         if (version==Version.v5_1) {
-            this.wfsFactory = new BFitzBPlanFactoryV5_1(false);
+            wfsFactory = new BFitzBPlanFactoryV5_1(false);
         } else if (version==Version.v5_1n) {
-            this.wfsFactory = new BFitzBPlanFactoryV5_1(true);
+            wfsFactory = new BFitzBPlanFactoryV5_1(true);
+        } else {
+            wfsFactory = new BFitzBPlanFactory();
         }
-        else {
-            this.wfsFactory = new BFitzBPlanFactory();
-        }
+        return wfsFactory;
     }
     
     public void setTest(boolean isTest) {
@@ -88,15 +93,13 @@ public class BPlanImporter {
 //        return false;
 //    }
 
-    public void updateBPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException  {
-        boolean autoCommit = con.getAutoCommit();
-        if (autoCommit) {
-            con.setAutoCommit(false);
-        }
+    public void updateBPlaene(Connection conWrite, Connection conRead, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException  {
+        conWrite.setAutoCommit(false);
+        
 
         if (bPlans != null) {
-            BPlanDAO bplanDao = new BPlanDAO(con, bplanTable);
-            KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
+            BPlanDAO bplanDao = new BPlanDAO(conWrite, conRead, bplanTable);
+            KonvertierungDAO konvertierungDAO = new KonvertierungDAO(conWrite, konvertierungTable);
 
             for (BPlan plan : bPlans) {        
                 logger.info("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
@@ -135,6 +138,7 @@ public class BPlanImporter {
                         }
                         
                         
+                        GemeindeDAO gemeindeDAO = new GemeindeDAO(conRead);
                         
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             BPlan teilPlan = teilPlaene.get(teilPlanNr);
@@ -142,8 +146,7 @@ public class BPlanImporter {
                             logger.info("Teilplaene: {} {}/{} {} {}", plan.getGml_id(), teilPlanNr, teilPlaene.size(), teilPlan.getName(), dbPlan==null ? "null" : dbPlan.getName());
                             Konvertierung konvertierung;
                             if (dbPlan == null) {
-                                // neuer BPlan
-                                GemeindeDAO gemeindeDAO = new GemeindeDAO(con);
+                                // neuer BPlan                                
                                 de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
@@ -182,21 +185,23 @@ public class BPlanImporter {
                                 Konvertierung dbKonvertierung = konvertierungDAO.insert(konvertierung);                    
                                 teilPlan.setKonvertierungId(dbKonvertierung.id);
                                 bplanDao.insert(teilPlan);
-                                con.commit();
+                                conWrite.commit();
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
                                 // konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
                                 if (succeded) {
-                                    boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);
+                                    boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);                                    
                                     if (isLastPlan && teilPlan.auslegungsstartdatum!=null && teilPlan.auslegungsstartdatum.length>0) {
-                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.auslegungsstartdatum[teilPlan.auslegungsstartdatum.length-1].getTime()));                                        
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.auslegungsstartdatum[teilPlan.auslegungsstartdatum.length-1]);      
+                                        conWrite.commit();
                                     } else {
                                         if (teilPlan.inkrafttretensdatum!=null) {
-                                            konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                            konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.inkrafttretensdatum);
+                                            conWrite.commit();
                                         }
                                     }
                                 }
-                                logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
+                                logger.info("BPLanImporter: Plan gmlId=\""+teilPlan.getGml_id()+"\" inserted.");
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     
                             } else {
@@ -212,30 +217,31 @@ public class BPlanImporter {
                                     konvertierungDAO.updatePublishFlag(teilPlan.konvertierung_id, false);
                                     konvertierung = konvertierungDAO.find(teilPlan.konvertierung_id); 
                                     
-                                    logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
+                                    logger.info("BPLanImporter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
-                                    con.commit();
+                                    conWrite.commit();
                                     
                                     boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
 //                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
                                     if (teilPlan.inkrafttretensdatum!=null && succeded) {
-                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.inkrafttretensdatum.getTime()));
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.inkrafttretensdatum);
+                                        conWrite.commit();
                                     }
-                                    
+                     
                                 } else {
-                                    logger.info("BPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" unchanged.");
+                                    logger.info("BPLanImporter: Plan gmlId=\""+teilPlan.getGml_id()+"\" unchanged.");
                                     importLogger.addLine(String.format("unchanged %s", teilPlan.getGml_id()));
                                 }
     
                             }
                         }
                     } else {
-                        logger.info("BPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
-                        importLogger.addError("BPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
+                        logger.info("BPLanImporter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
+                        importLogger.addError("BPLanImporter: Plan gmlId=\""+plan.getGml_id()+"\" Geometry is not valid: "+ geomValidierungsResult +".");
                     }
                 } catch (Exception ex) {                    
                     try {
-                        con.rollback();
+                        conWrite.rollback();
                     } 
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
@@ -245,9 +251,7 @@ public class BPlanImporter {
                 } 
             }
         }
-        if (autoCommit) {
-            con.setAutoCommit(autoCommit);
-        }
+        
     }
     
     /**
@@ -393,11 +397,39 @@ public class BPlanImporter {
         }
     }
 
-    public void importWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
+    public void importGeoplexWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
+        
+        List<BPlan> bPlans = null;        
+        try {
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+//            &COUNT=1200";
+            importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
+            bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
+        } 
+        catch (Exception ex) {
+            logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);
+            importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
+        }        
+        for (int i=0; i<bPlans.size(); i++) {
+            BPlan plan = bPlans.get(i);
+            System.err.println("-----------------plan-------" + i + "-----------------------");
+            BPlan.print(plan);
+        }
+        
+        
+        
+
+//        updateBPlaene(con, importLogger, entry, bPlans);
+        
+    }
+    public void importWFS(Connection conWrite, Connection conRead, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
 
         List<BPlan> bPlans = null;        
         try {
-            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+            String sVersion = (entry.onlineresource.indexOf("nwm")>=0) ? "2.0.0" : "1.1.0";
+            
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+            
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
             bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
         } 
@@ -406,19 +438,45 @@ public class BPlanImporter {
             importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
         }
 
-        updateBPlaene(con, importLogger, entry, bPlans);
+        updateBPlaene(conWrite, conRead, importLogger, entry, bPlans);
 
     }
 
 
-
+    private static boolean hasChanged(Object[] o1, Object[] o2) {
+        if (o1==null) {
+            if (o2!=null) {
+                return true;
+            }
+            return false;
+        }
+        return !Arrays.equals(o1, o2);
+    }
+    
+    
+    
+    private static boolean hasChanged(CodeList o1, CodeList o2) {
+        if (o1==null) {
+            if (o2!=null) {
+                return true;
+            }
+            return false;
+        }
+        CodeList cl01 = (CodeList)o1;
+        CodeList cl02 = (CodeList)o2;
+        if (hasChanged(cl01.getCodespace(), o2.getCodespace())) {
+            return true;
+        }
+        return (hasChanged(cl01.getCodelistValue(), cl02.getCodelistValue()));
+    }
+    
     private static boolean hasChanged(Object o1, Object o2) {
         if (o1==null) {
             if (o2!=null) {
                 return true;
             }
             return false;
-        } 
+        }
         return !o1.equals(o2);
     }
     
@@ -460,6 +518,7 @@ public class BPlanImporter {
             return true;
         }
         if (a01.length != a02.length) {
+            logger.info(String.format("<>PGExterneReferenz.length %s %s", a01.length, a02.length));
             return true;
         }
         for (int i=0; i<a01.length; i++) {
@@ -468,30 +527,41 @@ public class BPlanImporter {
             ExterneRef exRef02 = a02[i].object;
             
             if (hasChanged(exRef01.art, exRef02.art)) {                
+                logger.info(String.format("<>PGExterneReferenz.art idx=%s %s %s", i, exRef01.art, exRef02.art));
                 return true;
             }
             if (hasChanged(exRef01.beschreibung, exRef02.beschreibung)) {
+                String s1 = (exRef01.beschreibung==null ? "null" : ("\""+exRef01.beschreibung+"\""));
+                String s2 = (exRef02.beschreibung==null ? "null" : ("\""+exRef02.beschreibung+"\""));
+                logger.info(String.format("<>PGExterneReferenz.beschreibung idx=%s %s %s", i, s1, s2));
                 return true;
             }
-            if (hasChanged(exRef01.datum, exRef02.datum)) {           
+            if (hasChanged(exRef01.datum, exRef02.datum)) {
+                logger.info(String.format("<>PGExterneReferenz.datum idx=%s %s %s", i, exRef01.datum, exRef02.datum));
                 return true;        
             }
             if (hasChanged(exRef01.georefmimetype, exRef02.georefmimetype)) {
+                logger.info(String.format("<>PGExterneReferenz.georefmimetype idx=%s %s %s", i, exRef01.georefmimetype, exRef02.georefmimetype));
                 return true;
             } 
             if (hasChanged(exRef02.georefurl, exRef02.georefurl)) {
+                logger.info(String.format("<>PGExterneReferenz.georefurl idx=%s %s %s", i, exRef01.georefurl, exRef02.georefurl));
                 return true;
             } 
             if (hasChanged(exRef01.informationssystemurl, exRef02.informationssystemurl)) {
+                logger.info(String.format("<>PGExterneReferenz.informationssystemurl idx=%s %s %s", i, exRef01.informationssystemurl, exRef02.informationssystemurl));
                 return true;
             } 
             if (hasChanged(exRef01.referenzname, exRef02.referenzname)) {
+                logger.info(String.format("<>PGExterneReferenz.referenzname idx=%s %s %s", i, exRef01.referenzname, exRef02.referenzname));
                 return true;                    
             }
             if (hasChanged(exRef01.referenzurl, exRef02.referenzurl)) {
+                logger.info(String.format("<>PGExterneReferenz.referenzurl idx=%s %s %s", i, exRef01.referenzurl, exRef02.referenzurl));
                 return true;
             } 
             if (hasChanged(exRef01.typ, exRef02.typ)) {
+                logger.info(String.format("<>PGExterneReferenz.typ idx=%s %s %s", i, exRef01.typ, exRef02.typ));
                 return true;
             }
         }
@@ -500,8 +570,11 @@ public class BPlanImporter {
     public static boolean hasChanged(
             de.gdiservice.bplan.Gemeinde[] gemeinden01, 
             de.gdiservice.bplan.Gemeinde[] gemeinden02) {
+        if (gemeinden01 == null && gemeinden02 == null) {
+            return false;
+        }
         if (gemeinden01 == null || gemeinden02 == null) {
-            throw new IllegalArgumentException("one Plan doesnt has gemeinden");
+            return true;                                                                                                                                                 
         }
         if (gemeinden01.length != gemeinden02.length) {
             return true;
@@ -516,11 +589,15 @@ public class BPlanImporter {
     
     private static String toString(de.gdiservice.bplan.Gemeinde[] gemeinden) {
         StringBuilder sb = new StringBuilder();
-        for (int i=0; i<gemeinden.length; i++) {
-            sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
-            sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
-            sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
-            sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
+        if (gemeinden != null) {
+            for (int i=0; i<gemeinden.length; i++) {
+                sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
+                sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
+                sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
+                sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
+            }
+        } else {
+            sb.append("null");
         }
         return sb.toString();
     }
@@ -586,6 +663,102 @@ public class BPlanImporter {
             logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
             return true;
         }
+//        "status",
+        if (hasChanged(plan.status, dbPlan.status)) {
+            logger.info(String.format("<>status %s %s", plan.status, dbPlan.status));
+            return true;
+        }
+//        "verfahren",
+        if (hasChanged(plan.verfahren, dbPlan.verfahren)) {
+            logger.info(String.format("<>verfahren %s %s", plan.verfahren, dbPlan.verfahren));
+            return true;
+        }
+//        "untergangsdatum",
+        if (hasChanged(plan.untergangsdatum, dbPlan.untergangsdatum)) {
+            logger.info(String.format("<>untergangsdatum %s %s", plan.untergangsdatum, dbPlan.untergangsdatum));
+            return true;
+        }
+//        "genehmigungsdatum",
+        if (hasChanged(plan.genehmigungsdatum, dbPlan.genehmigungsdatum)) {
+            logger.info(String.format("<>genehmigungsdatum %s %s", plan.genehmigungsdatum, dbPlan.genehmigungsdatum));
+            return true;
+        }
+//        "gruenordnungsplan",
+        if (hasChanged(plan.gruenordnungsplan, dbPlan.gruenordnungsplan)) {
+            logger.info(String.format("<>gruenordnungsplan %s %s", plan.gruenordnungsplan, dbPlan.gruenordnungsplan));
+            return true;
+        }
+//        "ausfertigungsdatum",
+        if (hasChanged(plan.ausfertigungsdatum, dbPlan.ausfertigungsdatum)) {
+            logger.info(String.format("<>ausfertigungsdatum %s %s", plan.ausfertigungsdatum, dbPlan.ausfertigungsdatum));
+            return true;
+        }        
+//        "durchfuehrungsvertrag",
+        if (hasChanged(plan.durchfuehrungsvertrag, dbPlan.durchfuehrungsvertrag)) {
+            logger.info(String.format("<>durchfuehrungsvertrag %s %s", plan.durchfuehrungsvertrag, dbPlan.durchfuehrungsvertrag));
+            return true;
+        }         
+//        "erschliessungsvertrag",
+        if (hasChanged(plan.erschliessungsvertrag, dbPlan.erschliessungsvertrag)) {
+            logger.info(String.format("<>erschliessungsvertrag %s %s", plan.erschliessungsvertrag, dbPlan.erschliessungsvertrag));
+            return true;
+        }        
+//        "rechtsverordnungsdatum",
+        if (hasChanged(plan.rechtsverordnungsdatum, dbPlan.rechtsverordnungsdatum)) {
+            logger.info(String.format("<>rechtsverordnungsdatum %s %s", plan.rechtsverordnungsdatum, dbPlan.rechtsverordnungsdatum));
+            return true;
+        }              
+//        "satzungsbeschlussdatum",
+        if (hasChanged(plan.satzungsbeschlussdatum, dbPlan.satzungsbeschlussdatum)) {
+            logger.info(String.format("<>satzungsbeschlussdatum %s %s", plan.satzungsbeschlussdatum, dbPlan.satzungsbeschlussdatum));
+            return true;
+        }         
+//        "staedtebaulichervertrag",
+        if (hasChanged(plan.staedtebaulichervertrag, dbPlan.staedtebaulichervertrag)) {
+            logger.info(String.format("<>staedtebaulichervertrag %s %s", plan.staedtebaulichervertrag, dbPlan.staedtebaulichervertrag));
+            return true;
+        }
+////        "veroeffentlichungsdatum",
+//        "planaufstellendegemeinde",
+        if (hasChanged(plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde)) {
+            logger.info(String.format("<>planaufstellendegemeinde %s %s", plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde));
+            return true;
+        }
+//        "veraenderungssperredatum",
+        if (hasChanged(plan.veraenderungssperredatum, dbPlan.veraenderungssperredatum)) {
+            logger.info(String.format("<>veraenderungssperredatum %s %s", plan.veraenderungssperredatum, dbPlan.veraenderungssperredatum));
+            return true;
+        }
+//        "aufstellungsbeschlussdatum",
+        if (hasChanged(plan.aufstellungsbeschlussdatum, dbPlan.aufstellungsbeschlussdatum)) {
+            logger.info(String.format("<>aufstellungsbeschlussdatum %s %s", plan.aufstellungsbeschlussdatum, dbPlan.aufstellungsbeschlussdatum));
+            return true;
+        }
+//        "traegerbeteiligungsenddatum",
+        if (hasChanged(plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum)) {
+            logger.info(String.format("<>traegerbeteiligungsenddatum %s %s", plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum));
+            return true;
+        }
+//        "veraenderungssperreenddatum",
+        if (hasChanged(plan.veraenderungssperreenddatum, dbPlan.veraenderungssperreenddatum)) {
+            logger.info(String.format("<>veraenderungssperreenddatum %s %s", plan.veraenderungssperreenddatum, dbPlan.veraenderungssperreenddatum));
+            return true;
+        }
+//        "traegerbeteiligungsstartdatum",
+        if (hasChanged(plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum)) {
+            logger.info(String.format("<>traegerbeteiligungsstartdatum %s %s", plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum));
+            return true;
+        }
+//        "verlaengerungveraenderungssperre",
+        if (hasChanged(plan.verlaengerungveraenderungssperre, dbPlan.verlaengerungveraenderungssperre)) {
+            logger.info(String.format("<>verlaengerungveraenderungssperre %s %s", plan.verlaengerungveraenderungssperre, dbPlan.verlaengerungveraenderungssperre));
+            return true;
+        }
+//        "veraenderungssperrebeschlussdatum",
+        if (hasChanged(plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum)) {
+            logger.info(String.format("<>veraenderungssperrebeschlussdatum %s %s", plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum));
+            return true;
+        }
         return false;
     }
 
@@ -624,102 +797,175 @@ public class BPlanImporter {
         System.out.println(sb);
     }
 
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
-
-        try {                
-            
-            BPlanImporter bplImport = null;
-            FPlanImporter fplImport = null;
-            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
-
-            for (int i = 0; i < importConfigEntries.size(); i++) {                
-                ImportConfigEntry entry = importConfigEntries.get(i);
-                System.err.println("StellenId: \""+entry.stelle_id+"\"");
-                if (entry instanceof JobEntry) {
-                    ConfigReader.setJobStarted(con, (JobEntry)entry);
-                }
-                ImportLogger logger = new ImportLogger();
-                if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                    if (bplImport==null) {
-                        if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
-                            bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                        } else {
-                            bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                        }
-                    }
-                    bplImport.importWFS(con, entry, logger);
-                } else {
-                    if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        if (fplImport==null) {
-                            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
-                                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                            } else {
-                                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                            }
-                        }
-                        fplImport.importWFS(con, entry, logger);
-                    } else {
-                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden erden nur B_PLAN und F_PLAN");
-                    }
-                }                
-                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
-                
-                List<String> errors = logger.getErrors();
-                if (errors!=null && errors.size()>0) {
-                    System.err.println(errors.get(i));
-                }
-                if (entry instanceof JobEntry) {
-                    ConfigReader.setJobFinished(con, (JobEntry)entry);
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-    }
+//    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+//
+//        try {                
+//            
+//            BPlanImporter bplImport = null;
+//            FPlanImporter fplImport = null;
+//            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+//
+//            for (int i = 0; i < importConfigEntries.size(); i++) {                
+//                ImportConfigEntry entry = importConfigEntries.get(i);
+//                System.err.println("StellenId: \""+entry.stelle_id+"\"");
+//                if (entry instanceof JobEntry) {
+//                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+//                }
+//                ImportLogger logger = new ImportLogger();
+//                if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                    if (bplImport==null) {
+//                        if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+//                            bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                        } else {
+//                            bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                        }
+//                    }
+//                    bplImport.importWFS(con, entry, logger);
+//                } else {
+//                    if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        if (fplImport==null) {
+//                            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+//                                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                            } else {
+//                                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                            }
+//                        }
+//                        fplImport.importWFS(con, entry, logger);
+//                    } else {
+//                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden erden nur B_PLAN und F_PLAN");
+//                    }
+//                }                
+//                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+//                
+//                List<String> errors = logger.getErrors();
+//                if (errors!=null && errors.size()>0) {
+//                    System.err.println(errors.get(i));
+//                }
+//                if (entry instanceof JobEntry) {
+//                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+//                }
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//
+//    }
     
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+//    public static void runImportGeoplex(List<? extends ImportConfigEntry> importConfigEntries, Connection conRead, Connection conWrite, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+//
+//        try {
+//            BPlanImporter bplImport;
+//            FPlanImporter fplImport;
+//            SOPlanImporter soplImport;
+//            if (BPlanImportStarter.isSqlTypeSupported(conRead, "xp_spezexternereferenzauslegung")) {
+//                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v_Geoplex, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//            } else {
+//                bplImport= new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//            }
+//
+//            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
+//
+//            for (int i = 0; i < importConfigEntries.size(); i++) {                
+//                ImportConfigEntry entry = importConfigEntries.get(i);
+//                System.err.println("StellenId: \""+entry.stelle_id+"\"");
+//                if (entry instanceof JobEntry) {
+//                    ConfigReader.setJobStarted(conRead, (JobEntry)entry);
+//                }
+//                ImportLogger logger = new ImportLogger();
+//                if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                    bplImport.importGeoplexWFS(conRead, entry, logger);
+//                } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                    fplImport.importWFS(conRead, entry, logger);
+//                } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                    soplImport.importWFS(con, entry, logger);                    
+//                } else {
+//                    logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+//                }
+//                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+//                
+//                List<String> errors = logger.getErrors();
+//                if (errors!=null && errors.size()>0) {
+//                    sendErrors(errors, eMailSender, entry);
+//                }
+//                if (entry instanceof JobEntry) {
+//                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+//                }
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//
+//    }    
+    
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
             BPlanImporter bplImport;
+            BPlanNwmImporter bplNwmImport;
             FPlanImporter fplImport;
+            FPlanNwmImporter fplNwmImport;
             SOPlanImporter soplImport;
-            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+            SOPlanNwmImporter soplNwmImport;
+            if (BPlanImportStarter.isSqlTypeSupported(conRead, "xp_spezexternereferenzauslegung")) {
                 bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplNwmImport = new BPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
                 fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                fplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
                 soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             } else {
                 bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplNwmImport = new BPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
                 fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                fplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
                 soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             }
 
-            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);
                 System.err.println("StellenId: \""+entry.stelle_id+"\"");
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+                    ConfigReader.setJobStarted(conWrite, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                    bplImport.importWFS(con, entry, logger);
-                } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                    fplImport.importWFS(con, entry, logger);
-                } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                    soplImport.importWFS(con, entry, logger);                    
+                if (entry.onlineresource.indexOf("nwm")>=0) {
+                    if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        bplNwmImport.importWFS(conWrite, conRead, entry, logger);
+                    } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        fplNwmImport.importWFS(conWrite, conRead, entry, logger);
+                    } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        soplNwmImport.importWFS(conWrite, conRead, entry, logger);                    
+                    } else {
+                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+                    }
                 } else {
-                    logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+                    if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        bplImport.importWFS(conWrite, conRead, entry, logger);
+                    } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        fplImport.importWFS(conWrite, conRead, entry, logger);
+                    } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                        soplImport.importWFS(conWrite, conRead, entry, logger);                    
+                    } else {
+                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+                    }
                 }
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 
                 List<String> errors = logger.getErrors();
                 if (errors!=null && errors.size()>0) {
-                    sendErrors(errors, eMailSender, entry);
+                    if (eMailSender != null) {
+                        sendErrors(errors, eMailSender, entry);
+                    }
                 }
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+                    ConfigReader.setJobFinished(conWrite, (JobEntry)entry);
                 }
             }
         } catch (Exception ex) {
@@ -729,14 +975,16 @@ public class BPlanImporter {
     }
 
     public static void runImport(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
-        Connection con = null;
+        Connection conWrite = null;
+        Connection conRead = null;
         try {
-            con = BPlanImportStarter.getConnection(dbParam);
+            conWrite = BPlanImportStarter.getConnection(dbParam);
+            conRead = BPlanImportStarter.getConnection(dbParam);
 
             try {
-                List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(con, "xplankonverter.import_services");
+                List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(conRead, "xplankonverter.import_services");
                 
-                runImport(importConfigEntries, con, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                runImport(importConfigEntries, conWrite, conRead, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -745,9 +993,14 @@ public class BPlanImporter {
         catch (Exception ex) {
             throw new IllegalArgumentException("DB-Verbinung konnte nicht hergestellt werden.", ex);
         } finally {
-            if (con!=null) {
+            if (conWrite!=null) {
                 try {
-                    con.close();
+                    conWrite.close();
+                } catch (SQLException e) {}
+            }
+            if (conRead!=null) {
+                try {
+                    conRead.close();
                 } catch (SQLException e) {}
             }
         }

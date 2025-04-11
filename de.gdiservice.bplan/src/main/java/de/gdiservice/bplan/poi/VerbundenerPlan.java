@@ -3,29 +3,32 @@ package de.gdiservice.bplan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class VerbundenerPlan {
 
     final static Logger logger = LoggerFactory.getLogger(VerbundenerPlan.class);
 
     public enum RechtscharakterPlanaenderung {   
-        Aenderung(1000),
-        Ergaenzung(1100),
-        Aufhebung(2000),
-        Aufhebungsverfahren(20000),
-        Ueberplanung(20001);
+        Aenderung("1000"),
+        Ergaenzung("1100"),
+        Aufhebung("2000"),
+        Aufhebungsverfahren("20000"),
+        Ueberplanung("20001");
 
-        private Integer art; 
+        private String art; 
 
-        RechtscharakterPlanaenderung(Integer art) {
+        RechtscharakterPlanaenderung(String art) {
             this.art = art;
         }
 
-        public Integer getArt() {
+        public String getArt() {
             return art;
         }
 
-        public static RechtscharakterPlanaenderung get(int art) {
+        public static RechtscharakterPlanaenderung get(String art) {
             return java.util.Arrays.stream(RechtscharakterPlanaenderung.values())
                     .filter(v -> v.art.equals(art))
                     .findFirst()
@@ -37,9 +40,15 @@ public class VerbundenerPlan {
 
 
     String planname;
+    @JsonIgnore
     RechtscharakterPlanaenderung rechtscharakter;
     String nummer;
     String verbundenerplan;
+    
+    @JsonProperty
+    public void setRechtscharakter(String v) {
+        rechtscharakter = RechtscharakterPlanaenderung.get(v);
+    }
     
     public VerbundenerPlan() {
         

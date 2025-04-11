@@ -20,8 +20,8 @@ public class PGUtil {
             return "";
         } else {
             // s = s.replaceAll(",", "%2C");
-            
-            return s.replaceAll("\"", "\"\"");
+            // TODO rtr
+            return s.replaceAll("\"", "\"\"").replace("(", "\\(").replace(")", "\\)");
 //            return "\\\"" + s + "\\\"";
         }
 //        return s == null ? "" : s.replaceAll("\"", "\"\""); 
@@ -46,6 +46,9 @@ public class PGUtil {
     
     
     static String trim(String gemeindename) {
+        if (gemeindename==null || gemeindename.length()==0) {
+            return null;
+        }
         if (gemeindename.startsWith("\"")) {
             gemeindename = gemeindename.substring(1);
         }

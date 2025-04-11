@@ -1,5 +1,6 @@
 package de.gdiservice.bplan;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
@@ -7,23 +8,15 @@ import java.util.UUID;
 import org.locationtech.jts.geom.Geometry;
 //import org.postgresql.util.PGobject;
 
-public class BPlan {
+public class SOPlan {
 
 
     public enum PlanArt {
-        BPlan(1000),
-        EinfacherBPlan(10000),
-        QualifizierterBPlan(10001),
-        VorhabenbezogenerBPlan(3000),
-        VorhabenUndErschliessungsplan(3100),
-        InnenbereichsSatzung(4000),
-        KlarstellungsSatzung(40000),
-        EntwicklungsSatzung(40001),
-        ErgaenzungsSatzung(40002),
-        AussenbereichsSatzung(5000),
-        OertlicheBauvorschrift(7000),
-        Sonstiges(9999);
-
+        Sanierungssatzung_SAS(1100),
+        StaedtebaulicheEntwicklungsmassnahme(1200),
+        Stadtumbaugebiet(1300),
+        Erhaltungssatzung_SOS(1999),
+        SonstigeBausatzung(9999);
 
         private Integer art; 
 
@@ -47,9 +40,12 @@ public class BPlan {
     String name;
     UUID gml_id; //"67db195e-9203-4856-9bc9-8ea491153652"
     String nummer; //"3.1, 1. Änderung"
-    String[] planart; // "{10001}"
-    String rechtsstand; //="4000"
-    Date inkrafttretensdatum; //="2018-01-05"
+    PG_SO_Planart planart; // "{10001}"
+//    String rechtsstand; //="4000"
+    Date genehmigungsdatum; //="2018-01-05"
+    
+    LocalDate untergangsdatum; // neu
+    LocalDate technHerstellDatum; // neu
     
     Date[] auslegungsstartdatum;
     Date[] auslegungsenddatum;
@@ -63,6 +59,8 @@ public class BPlan {
     PGVerbundenerPlan[] wurdegeaendertvon;    
     
     Integer konvertierung_id;
+    
+    Gemeinde[] planaufstellendegemeinde; // neu
     
     
     
@@ -98,23 +96,23 @@ public class BPlan {
     public void setNummer(String nummer) {
         this.nummer = nummer;
     }
-    public String[] getPlanart() {
+    public PG_SO_Planart getPlanart() {
         return planart;
     }
-    public void setPlanart(String[] planart) {
+    public void setPlanart(PG_SO_Planart planart) {
         this.planart = planart;
     }
-    public String getRechtsstand() {
-        return rechtsstand;
+//    public String getRechtsstand() {
+//        return rechtsstand;
+//    }
+//    public void setRechtsstand(String rechtsstand) {
+//        this.rechtsstand = rechtsstand;
+//    }
+    public Date getGenehmigungsdatum() {
+        return genehmigungsdatum;
     }
-    public void setRechtsstand(String rechtsstand) {
-        this.rechtsstand = rechtsstand;
-    }
-    public Date getInkrafttretensdatum() {
-        return inkrafttretensdatum;
-    }
-    public void setInkrafttretensdatum(Date inkrafttretensdatum) {
-        this.inkrafttretensdatum = inkrafttretensdatum;
+    public void setGenehmigungsdatum(Date genehmigungsdatum) {
+        this.genehmigungsdatum = genehmigungsdatum;
     }
     
     public Date[] getAuslegungsstartdatum() {
@@ -129,6 +127,19 @@ public class BPlan {
     public void setAuslegungsenddatum(Date auslegungsenddatum) {
         this.auslegungsenddatum = new Date[] {auslegungsenddatum};
     }    
+    
+    public void setUntergangsdatum(LocalDate localDate) {
+        this.untergangsdatum = localDate;
+    }
+    public LocalDate getUntergangsdatum() {
+        return untergangsdatum;
+    }
+    public void setTechnHerstellDatum(LocalDate localDate) {
+        this.technHerstellDatum = localDate;
+    }
+    public LocalDate getTechnHerstellDatum() {
+        return technHerstellDatum;
+    }
     
     public Gemeinde[] getGemeinde() {
         return gemeinde;
@@ -197,6 +208,12 @@ public class BPlan {
         }
     }
     
+    public Gemeinde[] getPlanaufstellendegemeinde() {
+        return planaufstellendegemeinde;
+    }
+    public void setPlanaufstellendegemeinde(Gemeinde[] planaufstellendegemeinde) {
+        this.planaufstellendegemeinde = planaufstellendegemeinde;
+    }
     
     public void setAendert(VerbundenerPlan verbundenerPlan) {
         this.aendert = new PGVerbundenerPlan[] {new PGVerbundenerPlan(verbundenerPlan)};
@@ -214,11 +231,11 @@ public class BPlan {
         result = prime * result + ((geom == null) ? 0 : geom.hashCode());
         result = prime * result + ((gml_id == null) ? 0 : gml_id.hashCode());
         result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result + ((inkrafttretensdatum == null) ? 0 : inkrafttretensdatum.hashCode());
+        result = prime * result + ((genehmigungsdatum == null) ? 0 : genehmigungsdatum.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((nummer == null) ? 0 : nummer.hashCode());
-        result = prime * result + Arrays.hashCode(planart);
-        result = prime * result + ((rechtsstand == null) ? 0 : rechtsstand.hashCode());
+        result = prime * result + ((planart == null) ? 0 : planart.hashCode());
+//        result = prime * result + ((rechtsstand == null) ? 0 : rechtsstand.hashCode());
         return result;
     }
     @Override
@@ -229,7 +246,7 @@ public class BPlan {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        BPlan other = (BPlan) obj;
+        SOPlan other = (SOPlan) obj;
         if (!Arrays.equals(externeReferenzes, other.externeReferenzes)) {      
             if (externeReferenzes!=null && other.externeReferenzes!=null) {
                 if (externeReferenzes.length!=other.externeReferenzes.length) {
@@ -265,10 +282,10 @@ public class BPlan {
                 return false;
         } else if (!id.equals(other.id))
             return false;
-        if (inkrafttretensdatum == null) {
-            if (other.inkrafttretensdatum != null)
+        if (genehmigungsdatum == null) {
+            if (other.genehmigungsdatum != null)
                 return false;
-        } else if (!inkrafttretensdatum.equals(other.inkrafttretensdatum))
+        } else if (!genehmigungsdatum.equals(other.genehmigungsdatum))
             return false;
         if (name == null) {
             if (other.name != null)
@@ -280,22 +297,28 @@ public class BPlan {
                 return false;
         } else if (!nummer.equals(other.nummer))
             return false;
-        if (!Arrays.equals(planart, other.planart))
-            return false;
-        if (rechtsstand == null) {
-            if (other.rechtsstand != null)
+        if (planart == null) {
+            if (other.planart != null) {
                 return false;
-        } else if (!rechtsstand.equals(other.rechtsstand))
+            }
+        } else if (!planart.equals(other.planart)) {
             return false;
+        }
+//        if (rechtsstand == null) {
+//            if (other.rechtsstand != null)
+//                return false;
+//        } else if (!rechtsstand.equals(other.rechtsstand))
+//            return false;
         return true;
     }
 
     @Override
     public String toString() {
         return "BPlan [id=" + id + ", name=" + name + ", gml_id=" + gml_id + ", nummer=" + nummer + ", planart="
-                + planart + ", rechtsstand=" + rechtsstand + ", inkrafttretensdatum=" + inkrafttretensdatum
+                + planart + ", genehmigungsdatum=" + genehmigungsdatum
                 + ", gemeinde=" + gemeinde + ", externereferenz=" + Arrays.toString(externeReferenzes) + ", geom=" + geom + "]";
     }
+    
     
 
 

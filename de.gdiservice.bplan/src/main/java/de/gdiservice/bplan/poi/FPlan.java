@@ -1,5 +1,6 @@
 package de.gdiservice.bplan;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
@@ -81,8 +82,8 @@ public class FPlan {
     String verfahren; //="4000"
     Date wirksamkeitsdatum; //="2018-01-05"
     
-    Date[] auslegungsstartdatum;
-    Date[] auslegungsenddatum;
+    LocalDate[] auslegungsstartdatum;
+    LocalDate[] auslegungsenddatum;
     
     Gemeinde[] gemeinde; // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
     PGExterneReferenz[] externeReferenzes; // ="[{"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 1. Änderung des Bebauungsplans (438,49 KB)", "datum" : "2003-10-07", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 2. Änderung des Bebauungsplans (2,47 MB)", "datum" : "2012-04-03", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 3. Änderung des Bebauungsplans (2,3 MB)", "datum" : "2017-12-01", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Begründung zur 3. Änderung des Bebauungsplans (186,38 KB)", "datum" : "2017-12-01", "typ" : "1010"}]"
@@ -91,6 +92,19 @@ public class FPlan {
     String internalid;
     PGVerbundenerPlan[] aendert;
     PGVerbundenerPlan[] wurdegeaendertvon;    
+    
+    LocalDate aufstellungsbeschlussDatum; // neu
+    LocalDate entwurfsbeschlussdatum; // neu
+    LocalDate genehmigungsdatum; // neu
+    Gemeinde[] planaufstellendeGemeinde; //neu
+    LocalDate planbeschlussdatum; // neu    
+    CodeList status; // neu
+    LocalDate technherstelldatum; // neu
+    
+    LocalDate[] traegerbeteiligungsenddatum; //neu
+    LocalDate[] traegerbeteiligungsstartdatum; //neu
+    LocalDate untergangsdatum; //neu
+    LocalDate veroeffentlichungsdatum; //neu
     
     Integer konvertierung_id;
     
@@ -145,17 +159,17 @@ public class FPlan {
         this.wirksamkeitsdatum = wirksamkeitsdatum;
     }
     
-    public Date[] getAuslegungsstartdatum() {
+    public LocalDate[] getAuslegungsstartdatum() {
         return auslegungsstartdatum;
     }
-    public void setAuslegungsstartdatum(Date auslegungsstartdatum) {
-        this.auslegungsstartdatum = new Date[] {auslegungsstartdatum};
+    public void setAuslegungsstartdatum(LocalDate[] auslegungsstartdatum) {
+        this.auslegungsstartdatum = auslegungsstartdatum;
     }
-    public Date[] getAuslegungsenddatum() {
+    public LocalDate[] getAuslegungsenddatum() {
         return auslegungsenddatum;
     }
-    public void setAuslegungsenddatum(Date auslegungsenddatum) {
-        this.auslegungsenddatum = new Date[] {auslegungsenddatum};
+    public void setAuslegungsenddatum(LocalDate[] auslegungsenddatum) {
+        this.auslegungsenddatum = auslegungsenddatum;
     }    
     
     public Gemeinde[] getGemeinde() {
@@ -203,6 +217,8 @@ public class FPlan {
         this.geom = geom;
     }
 
+    
+    
 
     public Integer getKonvertierungId() {
         return konvertierung_id;
@@ -225,6 +241,71 @@ public class FPlan {
         }
     }
     
+
+    public LocalDate getAufstellungsbeschlussDatum() {
+        return aufstellungsbeschlussDatum;
+    }
+    public void setAufstellungsbeschlussDatum(LocalDate aufstellungsbeschlussDatum) {
+        this.aufstellungsbeschlussDatum = aufstellungsbeschlussDatum;
+    }
+    public LocalDate getEntwurfsbeschlussdatum() {
+        return entwurfsbeschlussdatum;
+    }
+    public void setEntwurfsbeschlussdatum(LocalDate entwurfsbeschlussdatum) {
+        this.entwurfsbeschlussdatum = entwurfsbeschlussdatum;
+    }
+    public LocalDate getGenehmigungsdatum() {
+        return genehmigungsdatum;
+    }
+    public void setGenehmigungsdatum(LocalDate genehmigungsdatum) {
+        this.genehmigungsdatum = genehmigungsdatum;
+    }
+    public Gemeinde[] getPlanaufstellendeGemeinde() {
+        return planaufstellendeGemeinde;
+    }
+    public void setPlanaufstellendeGemeinde(Gemeinde[] planaufstellendeGemeinde) {
+        this.planaufstellendeGemeinde = planaufstellendeGemeinde;
+    }
+    public LocalDate getPlanbeschlussdatum() {
+        return planbeschlussdatum;
+    }
+    public void setPlanbeschlussdatum(LocalDate planbeschlussdatum) {
+        this.planbeschlussdatum = planbeschlussdatum;
+    }
+    public LocalDate[] getTraegerbeteiligungsenddatum() {
+        return traegerbeteiligungsenddatum;
+    }
+    public void setTraegerbeteiligungsenddatum(LocalDate[] traegerbeteiligungsenddatum) {
+        this.traegerbeteiligungsenddatum = traegerbeteiligungsenddatum;
+    }
+    public LocalDate[] getTraegerbeteiligungsstartdatum() {
+        return traegerbeteiligungsstartdatum;
+    }
+    public void setTraegerbeteiligungsstartdatum(LocalDate[] traegerbeteiligungsstartdatum) {
+        this.traegerbeteiligungsstartdatum = traegerbeteiligungsstartdatum;
+    }
+    public LocalDate getUntergangsdatum() {
+        return untergangsdatum;
+    }
+    public void setUntergangsdatum(LocalDate untergangsdatum) {
+        this.untergangsdatum = untergangsdatum;
+    }
+    public LocalDate getVeroeffentlichungsdatum() {
+        return veroeffentlichungsdatum;
+    }
+    public void setVeroeffentlichungsdatum(LocalDate veroeffentlichungsdatum) {
+        this.veroeffentlichungsdatum = veroeffentlichungsdatum;
+    }
+    
+    public CodeList getStatus() {
+        return status;
+    }
+    public void setStatus(CodeList status) {
+        if (status != null) {
+            status.setType("\"xplan_gml\".\"fp_status\"");
+        }
+        this.status = status;
+    }
     
     public void setAendert(VerbundenerPlan verbundenerPlan) {
         this.aendert = new PGVerbundenerPlan[] {new PGVerbundenerPlan(verbundenerPlan)};

@@ -39,10 +39,10 @@ public class FPlanImporter {
     final static Logger logger = LoggerFactory.getLogger(FPlanImporter.class);
     
 
-    private String fplanTable;
-    private String konvertierungTable;
+    protected String fplanTable;
+    protected String konvertierungTable;
     
-    private String kvwmapUrl;
+    protected String kvwmapUrl;
     
     private String kvwmapLoginName;
     private String kvwmapPassword;
@@ -79,15 +79,15 @@ public class FPlanImporter {
     
 
 
-    public void updateFPlaene(Connection con, ImportLogger importLogger, ImportConfigEntry entry, List<FPlan> fPlans) throws SQLException  {
-        boolean autoCommit = con.getAutoCommit();
+    public void updateFPlaene(Connection conWrite, Connection conRead, ImportLogger importLogger, ImportConfigEntry entry, List<FPlan> fPlans) throws SQLException  {
+        boolean autoCommit = conWrite.getAutoCommit();
         if (autoCommit) {
-            con.setAutoCommit(false);
+            conWrite.setAutoCommit(false);
         }
 
         if (fPlans != null) {
-            FPlanDAO fplanDao = new FPlanDAO(con, fplanTable);
-            KonvertierungDAO konvertierungDAO = new KonvertierungDAO(con, konvertierungTable);
+            FPlanDAO fplanDao = new FPlanDAO(conWrite, conRead, fplanTable);
+            KonvertierungDAO konvertierungDAO = new KonvertierungDAO(conWrite, konvertierungTable);
 
             for (FPlan plan : fPlans) {        
                 logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());
@@ -133,7 +133,7 @@ public class FPlanImporter {
                             Konvertierung konvertierung;
                             if (dbPlan == null) {
                                 // neuer FPlan
-                                GemeindeDAO gemeindeDAO = new GemeindeDAO(con);
+                                GemeindeDAO gemeindeDAO = new GemeindeDAO(conWrite);
                                 de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
@@ -172,13 +172,13 @@ public class FPlanImporter {
                                 Konvertierung dbKonvertierung = konvertierungDAO.insert(konvertierung);                    
                                 teilPlan.setKonvertierungId(dbKonvertierung.id);
                                 fplanDao.insert(teilPlan);
-                                con.commit();
+                                conWrite.commit();
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);   
                                 boolean isLastPlan = (teilPlanNr == teilPlaene.size()-1);
                                 if (succeded) {
                                     if (isLastPlan && teilPlan.auslegungsstartdatum!=null && teilPlan.auslegungsstartdatum.length>0) {
-                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.auslegungsstartdatum[teilPlan.auslegungsstartdatum.length-1].getTime()));                                        
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.auslegungsstartdatum[teilPlan.auslegungsstartdatum.length-1]);                                        
                                     } else {
                                         if (teilPlan.wirksamkeitsdatum!=null) {
                                             konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
@@ -203,7 +203,7 @@ public class FPlanImporter {
                                     
                                     logger.info("FPLanImpoter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
-                                    con.commit();
+                                    conWrite.commit();
                                     
                                     boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
 //                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
@@ -224,7 +224,7 @@ public class FPlanImporter {
                     }
                 } catch (Exception ex) {                    
                     try {
-                        con.rollback();
+                        conWrite.rollback();
                     } 
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
@@ -235,7 +235,7 @@ public class FPlanImporter {
             }
         }
         if (autoCommit) {
-            con.setAutoCommit(autoCommit);
+            conWrite.setAutoCommit(autoCommit);
         }
     }
     
@@ -372,12 +372,12 @@ public class FPlanImporter {
         }
     }
 
-    public void importWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
+    public void importWFS(Connection conWrite, Connection conRead, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
 
         List<FPlan> fPlans = null;
 
         try {
-            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";            
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";                 
             importLogger.addLine("Reading WFS (F-Plan): \""+ entry.onlineresource + "\"");
             fPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
         } 
@@ -386,7 +386,7 @@ public class FPlanImporter {
             importLogger.addError("ERROR - Reading WFS (F-Plan): \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
         }
 
-        updateFPlaene(con, importLogger, entry, fPlans);
+        updateFPlaene(conWrite, conRead, importLogger, entry, fPlans);
 
     }
 
@@ -400,6 +400,17 @@ public class FPlanImporter {
             return false;
         } 
         return !o1.equals(o2);
+    }
+    
+    
+    private static boolean hasChanged(Object[] o1, Object[] o2) {
+        if (o1==null) {
+            if (o2!=null) {
+                return true;
+            }
+            return false;
+        }
+        return !Arrays.equals(o1, o2);
     }
     
     public static boolean hasChanged(PGVerbundenerPlan[] a01, PGVerbundenerPlan[] a02) {
@@ -431,49 +442,7 @@ public class FPlanImporter {
         }
         return false;
     }
-    
-    public static boolean hasChanged(PGExterneReferenz[] a01, PGExterneReferenz[] a02) {
-        if (a01 == null) {
-            return (a02 == null) ? false : true;
-        }
-        if (a01.length != a02.length) {
-            return true;
-        }
-        for (int i=0; i<a01.length; i++) {
-
-            ExterneRef exRef01 = a01[i].object;
-            ExterneRef exRef02 = a02[i].object;
-            
-            if (hasChanged(exRef01.art, exRef02.art)) {                
-                return true;
-            }
-            if (hasChanged(exRef01.beschreibung, exRef02.beschreibung)) {
-                return true;
-            }
-            if (hasChanged(exRef01.datum, exRef02.datum)) {           
-                return true;        
-            }
-            if (hasChanged(exRef01.georefmimetype, exRef02.georefmimetype)) {
-                return true;
-            } 
-            if (hasChanged(exRef02.georefurl, exRef02.georefurl)) {
-                return true;
-            } 
-            if (hasChanged(exRef01.informationssystemurl, exRef02.informationssystemurl)) {
-                return true;
-            } 
-            if (hasChanged(exRef01.referenzname, exRef02.referenzname)) {
-                return true;                    
-            }
-            if (hasChanged(exRef01.referenzurl, exRef02.referenzurl)) {
-                return true;
-            } 
-            if (hasChanged(exRef01.typ, exRef02.typ)) {
-                return true;
-            }
-        }
-        return false;
-    }
+   
     public static boolean hasChanged(
             de.gdiservice.bplan.Gemeinde[] gemeinden01, 
             de.gdiservice.bplan.Gemeinde[] gemeinden02) {
@@ -510,7 +479,7 @@ public class FPlanImporter {
             logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
             return true;
         }
-        if (hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
+        if (BPlanImporter.hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
             logger.info(String.format("<>Externereferenzes %s %s", plan.getExternereferenzes(), dbPlan.getExternereferenzes()));
             return true;
         }
@@ -559,10 +528,10 @@ public class FPlanImporter {
             logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
             return true;
         }
-        if (hasChanged(plan.internalid, dbPlan.internalid)) {
-            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
-            return true;
-        }
+//        if (hasChanged(plan.internalid, dbPlan.internalid)) {
+//            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
+//            return true;
+//        }
         return false;
     }
 
@@ -601,26 +570,33 @@ public class FPlanImporter {
         System.out.println(sb);
     }
 
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {         
             FPlanImporter bplImport;
-            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
-                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            FPlanImporter bplNwmImport;
+            if (BPlanImportStarter.isSqlTypeSupported(conWrite, "xp_spezexternereferenzauslegung")) {
+                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             } else {
-                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+                bplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             }
 
-            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);
                 System.err.println("StellenId: \""+entry.stelle_id+"\"");
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+                    ConfigReader.setJobStarted(conWrite, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                bplImport.importWFS(con, entry, logger);
+                if (entry.onlineresource.indexOf("nwm")>=0) {                    
+                    bplNwmImport.importWFS(conWrite, conRead, entry, logger);
+                } else {
+                    bplImport.importWFS(conWrite, conRead, entry, logger);
+                }                
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 
                 List<String> errors = logger.getErrors();
@@ -628,7 +604,7 @@ public class FPlanImporter {
                     System.err.println(errors.get(i));
                 }
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+                    ConfigReader.setJobFinished(conWrite, (JobEntry)entry);
                 }
             }
         } catch (Exception ex) {
@@ -637,26 +613,26 @@ public class FPlanImporter {
 
     }
     
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
             FPlanImporter bplImport;
-            if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
+            if (BPlanImportStarter.isSqlTypeSupported(conWrite, "xp_spezexternereferenzauslegung")) {
                 bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             } else {
                 bplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
             }
 
-            LogDAO logDAO = new LogDAO(con, "xplankonverter.import_protocol");
+            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);
                 System.err.println("StellenId: \""+entry.stelle_id+"\"");
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobStarted(con, (JobEntry)entry);
+                    ConfigReader.setJobStarted(conWrite, (JobEntry)entry);
                 }
                 ImportLogger logger = new ImportLogger();
-                bplImport.importWFS(con, entry, logger);
+                bplImport.importWFS(conWrite, conRead, entry, logger);
                 logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
                 
                 List<String> errors = logger.getErrors();
@@ -664,7 +640,7 @@ public class FPlanImporter {
                     sendErrors(errors, eMailSender, entry);
                 }
                 if (entry instanceof JobEntry) {
-                    ConfigReader.setJobFinished(con, (JobEntry)entry);
+                    ConfigReader.setJobFinished(conWrite, (JobEntry)entry);
                 }
             }
         } catch (Exception ex) {
@@ -674,14 +650,16 @@ public class FPlanImporter {
     }
 
     public static void runImport(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
-        Connection con = null;
+        Connection conWrite = null;
+        Connection conRead = null;
         try {
-            con = BPlanImportStarter.getConnection(dbParam);
+            conWrite = BPlanImportStarter.getConnection(dbParam);
+            conRead = BPlanImportStarter.getConnection(dbParam);
 
             try {
-                List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(con, "xplankonverter.import_services");
+                List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(conWrite, "xplankonverter.import_services");
                 
-                runImport(importConfigEntries, con, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                runImport(importConfigEntries, conWrite, conRead, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -690,9 +668,14 @@ public class FPlanImporter {
         catch (Exception ex) {
             throw new IllegalArgumentException("DB-Verbinung konnte nicht hergestellt werden.", ex);
         } finally {
-            if (con!=null) {
+            if (conWrite!=null) {
                 try {
-                    con.close();
+                    conWrite.close();
+                } catch (SQLException e) {}
+            }
+            if (conRead!=null) {
+                try {
+                    conRead.close();
                 } catch (SQLException e) {}
             }
         }

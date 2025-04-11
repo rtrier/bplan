@@ -1,8 +1,8 @@
 package de.gdiservice.wfs;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
 
 import org.locationtech.jts.geom.Geometry;
@@ -59,8 +59,8 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
         String sDate = (String) f.getAttribute("inkrafttretensdatum");
         if (sDate!=null && sDate.trim().length()>0) {
             try {
-                bplan.setInkrafttretensdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
-            } catch (ParseException e) {
+                bplan.setInkrafttretensdatum(  LocalDate.parse(sDate));
+            } catch (DateTimeParseException e) {
                 throw new IOException("Konnt Inkrafttretensdatum nicht \""+sDate+"\" parsen");
             } //="2018-01-05"
         }
@@ -68,16 +68,16 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
         String sAuslegungsstartdatum = (String) f.getAttribute("auslegungsstartdatum");
         if (sAuslegungsstartdatum!=null && sAuslegungsstartdatum.trim().length()>0) {
             try {
-                bplan.setAuslegungsstartdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sAuslegungsstartdatum));
-            } catch (ParseException e) {
+                bplan.setAuslegungsstartdatum( LocalDate.parse(sAuslegungsstartdatum));
+            } catch (DateTimeParseException e) {
                 throw new IOException("Konnt Auslegungssstartdatum nicht \""+sAuslegungsstartdatum+"\" parsen");
             }
         }        
         String sAuslegungsenddatum = (String) f.getAttribute("auslegungsenddatum");
         if (sAuslegungsenddatum!=null && sAuslegungsenddatum.trim().length()>0) {
             try {
-                bplan.setAuslegungsenddatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sAuslegungsenddatum));
-            } catch (ParseException e) {
+                bplan.setAuslegungsenddatum( LocalDate.parse(sAuslegungsenddatum));
+            } catch (DateTimeParseException e) {
                 throw new IOException("Konnt Auslegungsenddatum nicht \""+sAuslegungsenddatum+"\" parsen");
             }
         }

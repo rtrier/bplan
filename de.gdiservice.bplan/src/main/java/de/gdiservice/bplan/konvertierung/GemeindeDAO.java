@@ -6,16 +6,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.collections4.list.TreeList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import de.gdiservice.util.DBUtil;
 
 public class GemeindeDAO {
 
@@ -32,6 +28,46 @@ public class GemeindeDAO {
     public GemeindeDAO(Connection con) {
         this.con = con;
     }
+    
+    
+    public Gemeinde find(String rs, String ags, String gmd_name, String ot_name) throws SQLException {
+        if (rs == null || rs.length()==0) {
+            throw new IllegalArgumentException("In der Gemeinde fehlt das Attribut rs.");
+        }
+        if (ags == null || ags.length()==0) {
+            throw new IllegalArgumentException("In der Gemeinde fehlt das Attribut ags.");
+        }
+        if (gmd_name == null || gmd_name.length()==0) {
+            throw new IllegalArgumentException("In der Gemeinde fehlt das Attribut gmd_name.");
+        }
+        try {
+            int iAgs = Integer.parseInt(ags);
+            List<Gemeinde> gemeinden =  find(rs, iAgs, gmd_name, ot_name);
+            return (gemeinden != null && gemeinden.size()>0) ? gemeinden.get(0) : null;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Das Attribut ags in der Gemeinde ist keine Zahl.");
+        }
+        
+    }
+    
+//    public List<Gemeinde> find(String rs, String ags, String gmd_name, String ot_name) throws SQLException {
+//        if (rs == null || rs.length()==0) {
+//            throw new IllegalArgumentException("In der Gemeinde fehlt das Attribut rs.");
+//        }
+//        if (ags == null || ags.length()==0) {
+//            throw new IllegalArgumentException("In der Gemeinde fehlt das Attribut ags.");
+//        }
+//        if (gmd_name == null || gmd_name.length()==0) {
+//            throw new IllegalArgumentException("In der Gemeinde fehlt das Attribut gmd_name.");
+//        }
+//        try {
+//            int iAgs = Integer.parseInt(ags);
+//            return find(rs, iAgs, gmd_name, ot_name);
+//        } catch (NumberFormatException ex) {
+//            throw new IllegalArgumentException("Das Attribut ags in der Gemeinde ist keine Zahl.");
+//        }
+//        
+//    }
     
     public List<Gemeinde> find(String rs, Integer ags, String gmd_name, String ot_name) throws SQLException {        
         List<Gemeinde> gemeinden = new ArrayList<>();
@@ -82,7 +118,7 @@ public class GemeindeDAO {
 //            if (ot_name!=null) {
 //                stmt.setObject(i++, ot_name);
 //            }
-            logger.debug("{}", stmt);
+//            logger.debug("{}", stmt);
             resultset = stmt.executeQuery();
             while (resultset.next()) {
                 gemeinden.add(createGemeinde(resultset));
@@ -108,10 +144,10 @@ public class GemeindeDAO {
         }
         
         if (!gemeindeNamen.contains(gmd_name)) {
-            throw new IllegalArgumentException("Gemeindename nicht gültig. Mögliche Werte: "+toString(gemeindeNamen));
+            throw new IllegalArgumentException("Gemeindename \""+gmd_name+"\" nicht gültig. Mögliche Werte: "+toString(gemeindeNamen));
         }
-        if (ot_name !=null && !otNamen.contains(ot_name)) {
-            throw new IllegalArgumentException("Ortsteilname nicht gültig. Mögliche Werte: "+toString(otNamen));
+        if (ot_name !=null && ot_name.length()>0 && !otNamen.contains(ot_name)) {
+            throw new IllegalArgumentException("Ortsteilname \""+ot_name+"\" nicht gültig. Mögliche Werte: "+toString(otNamen));
         }
         
         return gemeinden;
