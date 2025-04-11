@@ -1,10 +1,12 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import java.sql.SQLException;
 
 
 import org.postgresql.util.PGobject;
 import org.postgresql.util.PGtokenizer;
+
+import de.gdiservice.bplan.PGUtil;
 
 
 public class PGVerbundenerPlan extends PGobject {
@@ -73,5 +75,9 @@ public class PGVerbundenerPlan extends PGobject {
         // sb.append("\\\")");
       return sb.toString();
     }
+
+
+    
+    
     
 }

@@ -34,6 +34,8 @@ import de.gdiservice.util.DBConnectionParameter;
 import de.gdiservice.util.DBUtil;
 import de.gdiservice.util.EMailSender;
 
+import de.gdiservice.bplan.poi.*;
+
 public class BPlanImportStarter {
 
     final static Logger logger = LoggerFactory.getLogger(BPlanImportStarter.class);
@@ -145,7 +147,8 @@ public class BPlanImportStarter {
     }
     
     public void runNow() throws SchedulerException {
-        BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+        // BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+        XPPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
         if (cronExpr!=null) {
             this.start();
         }
@@ -197,14 +200,15 @@ public class BPlanImportStarter {
         
         pgconn.addDataType("\"xplan_gml\".\"xp_gemeinde\"", Gemeinde.class);
         pgconn.addDataType("\"xplan_gml\".\"xp_planaufstellendegemeinde\"", PlanaufstellendeGemeinde.class);
-        pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenz\"", PGExterneReferenz.class);        
+        pgconn.addDataType("\"xplan_gml\".\"xp_spezexternereferenz\"", PGSpezExterneReferenz.class);        
         pgconn.addDataType("\"xplan_gml\".\"so_planart\"", PG_SO_Planart.class);
         pgconn.addDataType("\"xplan_gml\".\"bp_status\"", CodeList.class);        
-        pgconn.addDataType("\"xplan_gml\".\"fp_status\"", CodeList.class);        
+        pgconn.addDataType("\"xplan_gml\".\"fp_status\"", CodeList.class);
+        pgconn.addDataType("\"xplan_gml\".\"xp_externereferenz\"", PGExterneReferenz.class);
         pgconn.addDataType("\"bp_status\"", CodeList.class);        
 //        status xplan_gml.bp_status
         if (BPlanImportStarter.isSqlTypeSupported(con, "xp_spezexternereferenzauslegung")) {
-            pgconn.addDataType("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", PGExterneReferenzAuslegung.class);
+            pgconn.addDataType("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", PGSpezExterneReferenzAuslegung.class);
         }
         pgconn.addDataType("\"xplan_gml\".\"xp_verbundenerplan\"", PGVerbundenerPlan.class);  
         pgconn.addDataType("geometry", JtsGeometry.class);

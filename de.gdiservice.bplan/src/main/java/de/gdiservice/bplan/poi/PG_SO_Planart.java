@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import java.io.Serializable;
 import java.sql.SQLException;
@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import org.postgresql.util.PGobject;
 import org.postgresql.util.PGtokenizer;
+
+import de.gdiservice.bplan.PGUtil;
 
 
 public class PG_SO_Planart extends PGobject implements Serializable, Cloneable {
@@ -16,7 +18,7 @@ public class PG_SO_Planart extends PGobject implements Serializable, Cloneable {
   private static final long serialVersionUID = 1L;
   
   String codespace = "http://bauleitplaene-mv.de/codelist/SO_PlanArt/SO_PlanArt.xml";
-  String value;
+  public String value;
   
   
   public PG_SO_Planart() {

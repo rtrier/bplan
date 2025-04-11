@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 import de.gdiservice.bplan.PGUtil;
 
 
-public class PGSpezExterneReferenz extends PGobject implements Serializable, Cloneable {
+public class PGExterneReferenz extends PGobject implements Serializable, Cloneable {
     
-    final static Logger logger = LoggerFactory.getLogger(PGSpezExterneReferenz.class);
+    final static Logger logger = LoggerFactory.getLogger(PGExterneReferenz.class);
   
   /**
    * 
@@ -22,15 +22,15 @@ public class PGSpezExterneReferenz extends PGobject implements Serializable, Clo
   private static final long serialVersionUID = 1L;
   
   
-  public SpezExterneRef object;
+  ExterneRef object;
   
   
-  public PGSpezExterneReferenz() {
+  public PGExterneReferenz() {
     
   }
   
-  public PGSpezExterneReferenz(SpezExterneRef bFitzExterneRef) {
-    this.object = bFitzExterneRef;
+  public PGExterneReferenz(ExterneRef externeRef) {
+    this.object = externeRef;
   }
   
     
@@ -46,7 +46,7 @@ public class PGSpezExterneReferenz extends PGobject implements Serializable, Clo
 	
 		int i=0;
 		
-		this.object = new SpezExterneRef(); 		
+		this.object = new ExterneRef(); 		
 		this.object.georefurl = PGUtil.getString(t.getToken(i++));				
 		this.object.georefmimetype = PGUtil.getString(t.getToken(i++));
 
@@ -67,13 +67,11 @@ public class PGSpezExterneReferenz extends PGobject implements Serializable, Clo
 		} catch (ParseException e) {
 			throw new SQLException("String \"" + sDatum + "\" konnte nicht als Datum geparst werden");
 		}		
-		this.object.typ = PGUtil.getString(t.getToken(i));
-
-	
+		
 	}	
 	
 	
-	public SpezExterneRef getExterneRef() {
+	public ExterneRef getExterneRef() {
 	    return object;
 	}
 	
@@ -95,9 +93,7 @@ public class PGSpezExterneReferenz extends PGobject implements Serializable, Clo
 		    sb.append('"').append(PGUtil.getStringValue(this.object.beschreibung)).append("\"");
 		}
 		sb.append(",");
-		sb.append(PGUtil.getDateValue(this.object.datum)).append(',');
-		sb.append(PGUtil.getStringValue(this.object.typ));
-		
+		sb.append(PGUtil.getDateValue(this.object.datum)).append(',');		
 		sb.append(")");
 	  return sb.toString();
 	}
@@ -125,7 +121,7 @@ public class PGSpezExterneReferenz extends PGobject implements Serializable, Clo
             logger.debug("PGExterneReferenz false01");
             return false;
         }
-        PGSpezExterneReferenz other = (PGSpezExterneReferenz) obj;
+        PGExterneReferenz other = (PGExterneReferenz) obj;
         if (object == null) {
             if (other.object != null) {
                 logger.debug("PGExterneReferenz false02");

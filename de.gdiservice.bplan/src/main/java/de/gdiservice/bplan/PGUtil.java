@@ -7,7 +7,7 @@ import java.util.TimeZone;
 
 public class PGUtil {
     
-    static final String getString(String s) {       
+    public static final String getString(String s) {       
         if (s!=null && s.startsWith("\"") && s.endsWith("\"")) {            
             return s.substring(1, s.length()-1);
         }
@@ -15,7 +15,7 @@ public class PGUtil {
     }
     
     
-    static final String getStringValue(String s) {
+    public static final String getStringValue(String s) {
         if (s==null) {
             return "";
         } else {
@@ -27,11 +27,11 @@ public class PGUtil {
 //        return s == null ? "" : s.replaceAll("\"", "\"\""); 
     }
     
-    static final String getDateValue(Date date) {
+    public static final String getDateValue(Date date) {
         return date == null ? "" : new SimpleDateFormat("yyyy-MM-dd").format(date); 
     }
     
-    static Date getDate(String s) throws ParseException {
+    public static Date getDate(String s) throws ParseException {
         // System.out.println("getDate(\""+s+"\")");
         if (s!=null && s.length()>0) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -45,7 +45,7 @@ public class PGUtil {
     }
     
     
-    static String trim(String gemeindename) {
+    static public String trim(String gemeindename) {
         if (gemeindename==null || gemeindename.length()==0) {
             return null;
         }

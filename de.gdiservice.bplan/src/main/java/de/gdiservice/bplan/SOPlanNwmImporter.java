@@ -8,11 +8,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
+import de.gdiservice.bplan.dao.SOPlanDAO;
 import de.gdiservice.bplan.konvertierung.Gemeinde;
 import de.gdiservice.bplan.konvertierung.GemeindeDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung;
 import de.gdiservice.bplan.konvertierung.Konvertierung.KonvertierungStatus;
 import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
+import de.gdiservice.bplan.poi.HasChangedFunctions;
+import de.gdiservice.bplan.poi.SOPlan;
 
 public class SOPlanNwmImporter extends SOPlanImporter {
 
@@ -88,13 +91,13 @@ public class SOPlanNwmImporter extends SOPlanImporter {
             
             for (int i=0; i<soPlans.size(); i++) {
                 SOPlan plan = soPlans.get(i);
-                if (lDoubleGmlIds.contains(plan.gml_id)) {
+                if (lDoubleGmlIds.contains(plan.getGml_id())) {
                     countSkipped++;
                     continue;
                 }
                 logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());                
                 try {
-                    de.gdiservice.bplan.Gemeinde gemeinde = plan.getGemeinde()[0];
+                    de.gdiservice.bplan.poi.Gemeinde gemeinde = plan.getGemeinde()[0];
                     Gemeinde kvGemeinde = gemeindeDAO.find(gemeinde.getRs(), gemeinde.getAgs(), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                     if (kvGemeinde == null) {
                         throw new IllegalArgumentException("BPLanImporter: Plan gmlId=\""+plan.getGml_id()+"\" konnte Gemeinde \""+ gemeinde + "\" nicht finden.");
@@ -116,8 +119,8 @@ public class SOPlanNwmImporter extends SOPlanImporter {
                         boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);   
 
                         if (succeded) {
-                            if (plan.genehmigungsdatum!=null) {
-                                konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(plan.genehmigungsdatum.getTime()));
+                            if (plan.getGenehmigungsdatum()!=null) {
+                                konvertierungDAO.updatePublishDate(konvertierung.id, plan.getGenehmigungsdatum());
                                 conWrite.commit();
                             }
                             countSucceded++;
@@ -128,15 +131,15 @@ public class SOPlanNwmImporter extends SOPlanImporter {
                         importLogger.addLine(String.format("inserted %s", plan.getGml_id()));
                     } else {
                         // update SOPlan                                
-                        if (SOPlanImporter.hasChanged(plan, dbPlan)) {
+                        if (HasChangedFunctions.hasChanged(plan, dbPlan)) {
                             logger.debug("update plan");
                             if (dbPlan.getKonvertierungId() != null) {
                                         plan.setKonvertierungId(dbPlan.getKonvertierungId());
-                                        int updateCount = konvertierungDAO.update(plan.konvertierung_id);
+                                        int updateCount = konvertierungDAO.update(plan.getKonvertierungId());
                                         if (updateCount == 1) {
                                             // throw new IllegalArgumentException("In der DB existiert ein BPlan mit der gmlId. Der zugehörige Eintrag in der Konvertierungs-Tabelle existiert aber nicht.");
-                                            konvertierungDAO.updatePublishFlag(plan.konvertierung_id, false);
-                                            konvertierung = konvertierungDAO.find(plan.konvertierung_id);
+                                            konvertierungDAO.updatePublishFlag(plan.getKonvertierungId(), false);
+                                            konvertierung = konvertierungDAO.find(plan.getKonvertierungId());
                                         }   
                                     }
                                     if (konvertierung == null) {
@@ -150,13 +153,13 @@ public class SOPlanNwmImporter extends SOPlanImporter {
                                     soplanDao.update(plan);
                                     conWrite.commit();
                                     
-                                    int updateCount = konvertierungDAO.update(plan.konvertierung_id);
+                                    int updateCount = konvertierungDAO.update(plan.getKonvertierungId());
                                     if (updateCount == 0) {
                                         throw new IllegalArgumentException("In der DB existiert ein SOPlan mit der gmlId. Der zugehörige Eintrag in der Konvertierungs-Tabelle existiert aber nicht.");
                                     }
-                                    konvertierungDAO.updatePublishFlag(plan.konvertierung_id, false);
+                                    konvertierungDAO.updatePublishFlag(plan.getKonvertierungId(), false);
                                     
-                                    konvertierung = konvertierungDAO.find(plan.konvertierung_id); 
+                                    konvertierung = konvertierungDAO.find(plan.getKonvertierungId()); 
                                     
                                     logger.info("SOPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", plan.getGml_id()));
@@ -164,8 +167,8 @@ public class SOPlanNwmImporter extends SOPlanImporter {
                                     
                                     boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);
                                     if (succeded) {
-                                        if (plan.genehmigungsdatum!=null) {
-                                            konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(plan.genehmigungsdatum.getTime()));
+                                        if (plan.getGenehmigungsdatum()!=null) {
+                                            konvertierungDAO.updatePublishDate(konvertierung.id, plan.getGenehmigungsdatum());
                                         }
                                         conWrite.commit();
                                         countSucceded++;
@@ -189,8 +192,8 @@ public class SOPlanNwmImporter extends SOPlanImporter {
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
                     }
-                    importLogger.addError("error updating SOPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
-                    logger.error("error updating SOPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
+                    importLogger.addError("error updating SOPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
+                    logger.error("error updating SOPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
             logger.info("count="+soPlans.size()+" succeded="+countSucceded+ " failed="+countFailed+ " skipped="+countSkipped+" countNotValidated="+countNotValidated);

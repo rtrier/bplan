@@ -216,7 +216,7 @@ public class KonvertierungDAO {
     public void updatePublishFlag(Integer konvertierung_id, boolean succeded) throws SQLException {
         PreparedStatement stmt = null;
         try {    
-            String sql = "update xplankonverter.konvertierungen set veroeffentlicht = ? where id=?";
+            String sql = "update " + tableName +" set veroeffentlicht = ? where id=?";
             
             stmt = con.prepareStatement(sql);
             stmt.setBoolean(1, succeded);
@@ -237,7 +237,7 @@ public class KonvertierungDAO {
     public void updatePublishDate(Integer konvertierung_id, LocalDate time) throws SQLException {
         PreparedStatement stmt = null;
         try {    
-            String sql = "update xplankonverter.konvertierungen set veroeffentlichungsdatum = ? where id=?";
+            String sql = "update " +tableName+ " set veroeffentlichungsdatum = ? where id=?";
             
             stmt = con.prepareStatement(sql);
             stmt.setObject(1, time);
@@ -254,24 +254,24 @@ public class KonvertierungDAO {
         
     }
     
-    public void updatePublishDate(Integer konvertierung_id, java.util.Date time) throws SQLException {
-        PreparedStatement stmt = null;
-        try {    
-            String sql = "update xplankonverter.konvertierungen set veroeffentlichungsdatum = ? where id=?";
-            
-            stmt = con.prepareStatement(sql);
-            stmt.setDate(1, new Date(time.getTime()));
-            stmt.setObject(2, konvertierung_id);
-            logger.debug("{}", stmt);
-            stmt.executeUpdate();
-        }
-        finally {
-
-            if (stmt!=null) {
-                try { stmt.close(); } catch (SQLException e) {}
-            }
-        }
-        
-    }
+//    public void updatePublishDate(Integer konvertierung_id, java.util.Date time) throws SQLException {
+//        PreparedStatement stmt = null;
+//        try {    
+//            String sql = "update "+ tableName + " set veroeffentlichungsdatum = ? where id=?";
+//            
+//            stmt = con.prepareStatement(sql);
+//            stmt.setDate(1, new Date(time.getTime()));
+//            stmt.setObject(2, konvertierung_id);
+//            logger.debug("{}", stmt);
+//            stmt.executeUpdate();
+//        }
+//        finally {
+//
+//            if (stmt!=null) {
+//                try { stmt.close(); } catch (SQLException e) {}
+//            }
+//        }
+//        
+//    }
 
 }

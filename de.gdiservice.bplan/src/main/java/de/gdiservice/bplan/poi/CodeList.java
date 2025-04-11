@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import java.io.Serializable;
 import java.sql.SQLException;
@@ -9,6 +9,8 @@ import org.postgresql.util.PGtokenizer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import de.gdiservice.bplan.PGUtil;
 
 public class CodeList extends PGobject implements Serializable, Cloneable {
     

@@ -1,10 +1,12 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import org.postgresql.util.PGobject;
 import org.postgresql.util.PGtokenizer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import de.gdiservice.bplan.PGUtil;
 
 public class Referenzmimetype extends PGobject {
 	
