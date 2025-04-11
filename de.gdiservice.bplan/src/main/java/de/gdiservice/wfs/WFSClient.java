@@ -41,13 +41,14 @@ public class WFSClient {
                 try {
                     list.add(factory.build(f));
                 } catch (Exception e) {
-                    e.printStackTrace();
                     if (importLogger!=null) {
                         Object gmlId = f.getAttribute("gml_id");
                         Object name = f.getAttribute("name");
                         if (gmlId==null) {
+                            logger.error("SimpleFeature with name=\"" + name + "\" has an error.", e);
                             importLogger.addError("SimpleFeature with name=\"" + name + "\" has an error: "+e.getMessage());
                         } else {
+                            logger.error("SimpleFeature with gmlId=\"" + gmlId + "\" has an error.", e);
                             importLogger.addError("SimpleFeature with gmlId=\"" + gmlId + "\" has an error: "+e.getMessage());
                         }
                     }
@@ -77,7 +78,8 @@ public class WFSClient {
         
         InputStream in = url.openStream();
 
-        Configuration gml = (factory instanceof GeolexBPlanFactory) ? new org.geotools.wfs.v2_0.WFSConfiguration() : new GMLConfiguration();
+//        Configuration gml = (factory instanceof GeolexBPlanFactory) ? new org.geotools.wfs.v2_0.WFSConfiguration() : new GMLConfiguration();
+        Configuration gml = (url.getQuery().indexOf("2.0.0")>0) ? new org.geotools.wfs.v2_0.WFSConfiguration() : new GMLConfiguration();
         Parser parser = new Parser(gml);
         parser.setStrict(false);
 

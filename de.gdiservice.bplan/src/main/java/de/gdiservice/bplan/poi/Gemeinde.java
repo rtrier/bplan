@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import java.io.Serializable;
 import java.sql.SQLException;
@@ -8,6 +8,8 @@ import org.postgresql.util.PGobject;
 import org.postgresql.util.PGtokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import de.gdiservice.bplan.PGUtil;
 
 
 public class Gemeinde extends PGobject implements Serializable, Cloneable {
@@ -24,15 +26,15 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 1L;
 
-    String ags; //"13072072", "
-    String rs; // " : "130725260072", ""
-    String gemeindename;
-    String ortsteilname;		
+    public String ags; //"13072072", "
+    public String rs; // " : "130725260072", ""
+    public String gemeindename;
+    public String ortsteilname;		
 
 
     @Override
     public void setValue(String value) throws SQLException {
-        logger.debug("Gemeinde.setValue(\""+value+"\")");
+//        logger.debug("Gemeinde.setValue(\""+value+"\")");
         String sqlString = PGtokenizer.removePara(PGtokenizer.removeCurlyBrace(value));
         PGtokenizer t = new PGtokenizer( sqlString, ',');
 
@@ -46,7 +48,8 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
 //            gemeindename = gemeindename.substring(0, gemeindename.length()-1);
 //        }
         // ortsteilname = t.getToken(3);
-        ortsteilname = PGUtil.trim(t.getToken(3));
+        String sOrtsteilname = PGUtil.trim(t.getToken(3)); 
+        ortsteilname = sOrtsteilname !=null && sOrtsteilname.length()>0 ? sOrtsteilname : null;
         
         this.value = value;
     }	

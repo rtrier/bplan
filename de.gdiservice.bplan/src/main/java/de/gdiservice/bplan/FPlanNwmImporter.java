@@ -2,17 +2,19 @@ package de.gdiservice.bplan;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
+import de.gdiservice.bplan.dao.FPlanDAO;
 import de.gdiservice.bplan.konvertierung.Gemeinde;
 import de.gdiservice.bplan.konvertierung.GemeindeDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung;
-import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung.KonvertierungStatus;
+import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
+import de.gdiservice.bplan.poi.FPlan;
+import de.gdiservice.bplan.poi.HasChangedFunctions;
 
 public class FPlanNwmImporter extends FPlanImporter {
 
@@ -88,13 +90,13 @@ public class FPlanNwmImporter extends FPlanImporter {
             
             for (int i=0; i<fplans.size(); i++) {
                 FPlan plan = fplans.get(i);
-                if (lDoubleGmlIds.contains(plan.gml_id)) {
+                if (lDoubleGmlIds.contains(plan.getGml_id())) {
                     countSkipped++;
                     continue;
                 }
                 logger.debug("Verarbeite: {} {}", plan.getGml_id(), plan.getName());                
                 try {
-                    de.gdiservice.bplan.Gemeinde gemeinde = plan.getGemeinde()[0];
+                    de.gdiservice.bplan.poi.Gemeinde gemeinde = plan.getGemeinde()[0];
                     Gemeinde kvGemeinde = gemeindeDAO.find(gemeinde.getRs(), gemeinde.getAgs(), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                     if (kvGemeinde == null) {
                         throw new IllegalArgumentException("BPLanImporter: Plan gmlId=\""+plan.getGml_id()+"\" konnte Gemeinde \""+ gemeinde + "\" nicht finden.");
@@ -118,7 +120,7 @@ public class FPlanNwmImporter extends FPlanImporter {
                         boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);
                         if (succeded) {
                             if (plan.wirksamkeitsdatum!=null && succeded) {
-                                konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(plan.wirksamkeitsdatum.getTime()));
+                                konvertierungDAO.updatePublishDate(konvertierung.id, plan.wirksamkeitsdatum);
                                 conWrite.commit();
                             }
                             countSucceded++;
@@ -128,7 +130,7 @@ public class FPlanNwmImporter extends FPlanImporter {
                         logger.info("BPLanImpoter: Plan gmlId=\""+plan.getGml_id()+"\" inserted.");
                     } else {
                         // update FPlan                                
-                        if (FPlanImporter.hasChanged(plan, dbPlan)) {
+                        if (HasChangedFunctions.hasChanged(plan, dbPlan)) {
                             logger.debug("update plan");
                             if (dbPlan.getKonvertierungId() != null) {
                                         plan.setKonvertierungId(dbPlan.getKonvertierungId());
@@ -165,7 +167,7 @@ public class FPlanNwmImporter extends FPlanImporter {
                                     boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);
                                     if (succeded) {
                                         if (plan.wirksamkeitsdatum!=null && succeded) {
-                                            konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(plan.wirksamkeitsdatum.getTime()));
+                                            konvertierungDAO.updatePublishDate(konvertierung.id, plan.wirksamkeitsdatum);
                                         }                                        
                                         conWrite.commit();
                                         countSucceded++;
@@ -190,8 +192,8 @@ public class FPlanNwmImporter extends FPlanImporter {
                         logger.error("rollback Error", e);
                     }
                     countFailed++;
-                    importLogger.addError("error updating FPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
-                    logger.error("error updating FPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
+                    importLogger.addError("error updating FPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
+                    logger.error("error updating FPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
             logger.info("count="+fplans.size()+" succeded="+countSucceded+ " failed="+countFailed+ " skipped="+countSkipped+" countNotValidated="+countNotValidated);

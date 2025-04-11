@@ -7,7 +7,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import de.gdiservice.bplan.VerbundenerPlan.RechtscharakterPlanaenderung;
+import de.gdiservice.bplan.poi.*;
+import de.gdiservice.bplan.poi.VerbundenerPlan.RechtscharakterPlanaenderung;
+import de.gdiservice.bplan.dao.FPlanDAO;
 import de.gdiservice.bplan.konvertierung.Gemeinde;
 import de.gdiservice.bplan.konvertierung.GemeindeDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung;
@@ -34,7 +35,7 @@ import de.gdiservice.wfs.WFSClient;
 import de.gdiservice.wfs.WFSFactory;
 
 
-public class FPlanImporter {
+public class FPlanImporter implements XPPlanImporterI {
 
     final static Logger logger = LoggerFactory.getLogger(FPlanImporter.class);
     
@@ -115,10 +116,10 @@ public class FPlanImporter {
                             if (teilPlanNr>0) {
                                 UUID teilPlanUUID = (teilPlanNr<listDBPlaene.size()) ? listDBPlaene.get(teilPlanNr).getGml_id() : UUID.randomUUID();
                                 teilPlan.setGml_id(teilPlanUUID);
-                                teilPlan.name = teilPlan.name + " " + String.valueOf(teilPlanNr) + ". Änderung";
-                                VerbundenerPlan aendert = new VerbundenerPlan(plan.name, RechtscharakterPlanaenderung.Aenderung, plan.nummer, previousPlan.getGml_id().toString());
+                                teilPlan.setName( teilPlan.getName() + " " + String.valueOf(teilPlanNr) + ". Änderung");
+                                VerbundenerPlan aendert = new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), previousPlan.getGml_id().toString());
                                 teilPlan.setAendert(aendert);
-                                VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.name, RechtscharakterPlanaenderung.Aenderung, plan.nummer, teilPlan.getGml_id().toString()); 
+                                VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), teilPlan.getGml_id().toString()); 
                                 previousPlan.setWurdeGeaendertVon(wurdegeaendertvon);
                             }
                             previousPlan = teilPlan; 
@@ -134,7 +135,7 @@ public class FPlanImporter {
                             if (dbPlan == null) {
                                 // neuer FPlan
                                 GemeindeDAO gemeindeDAO = new GemeindeDAO(conWrite);
-                                de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
+                                de.gdiservice.bplan.poi.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
                                     throw new IllegalArgumentException("Gemeinde "+gemeinde+" vom WFS ist nicht in der DB hinterlegt.");
@@ -181,7 +182,7 @@ public class FPlanImporter {
                                         konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.auslegungsstartdatum[teilPlan.auslegungsstartdatum.length-1]);                                        
                                     } else {
                                         if (teilPlan.wirksamkeitsdatum!=null) {
-                                            konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
+                                            konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.wirksamkeitsdatum);
                                         }
                                     }
                                 }
@@ -190,7 +191,7 @@ public class FPlanImporter {
     
                             } else {
                                 // update FPlan                                
-                                if (FPlanImporter.hasChanged(teilPlan, dbPlan)) {
+                                if (HasChangedFunctions.hasChanged(teilPlan, dbPlan)) {
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     fplanDao.update(teilPlan);
@@ -208,7 +209,7 @@ public class FPlanImporter {
                                     boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
 //                                    konvertierungDAO.updatePublishFlag(konvertierung.id, succeded);
                                     if (teilPlan.wirksamkeitsdatum!=null && succeded) {
-                                        konvertierungDAO.updatePublishDate(konvertierung.id, new Timestamp(teilPlan.wirksamkeitsdatum.getTime()));
+                                        konvertierungDAO.updatePublishDate(konvertierung.id, teilPlan.wirksamkeitsdatum);
                                     }
                                     
                                 } else {
@@ -229,8 +230,8 @@ public class FPlanImporter {
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
                     }
-                    importLogger.addError("error updating FPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
-                    logger.error("error updating FPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
+                    importLogger.addError("error updating FPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
+                    logger.error("error updating FPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
         }
@@ -247,9 +248,9 @@ public class FPlanImporter {
      * @return
      */
     private boolean isStelleResponsible(Integer stelle_id, FPlan plan) {
-        de.gdiservice.bplan.Gemeinde[] gemeinden = plan.getGemeinde();
+        de.gdiservice.bplan.poi.Gemeinde[] gemeinden = plan.getGemeinde();
         if (gemeinden!=null) {
-            for (de.gdiservice.bplan.Gemeinde gemeinde : gemeinden) {
+            for (de.gdiservice.bplan.poi.Gemeinde gemeinde : gemeinden) {
                 if (gemeinde.rs.startsWith(String.valueOf(stelle_id))) {
                     return true;
                 }
@@ -392,154 +393,20 @@ public class FPlanImporter {
 
 
 
-    private static boolean hasChanged(Object o1, Object o2) {
-        if (o1==null) {
-            if (o2!=null) {
-                return true;
-            }
-            return false;
-        } 
-        return !o1.equals(o2);
-    }
-    
-    
-    private static boolean hasChanged(Object[] o1, Object[] o2) {
-        if (o1==null) {
-            if (o2!=null) {
-                return true;
-            }
-            return false;
-        }
-        return !Arrays.equals(o1, o2);
-    }
-    
-    public static boolean hasChanged(PGVerbundenerPlan[] a01, PGVerbundenerPlan[] a02) {
-        if (a01 == null) {
-            return (a02 == null) ? false : true;
-        }
-        if (a02 == null) {
-            return true;
-        }
-        if (a01.length != a02.length) {
-            return true;
-        }
-        for (int i=0; i<a01.length; i++) {
 
-            VerbundenerPlan vb01 = a01[i].getVerbundenerPlan();
-            VerbundenerPlan vb02 = a02[i].getVerbundenerPlan();
-            if (hasChanged(vb01.getPlanname(), vb02.getPlanname())) {
-                return true;
-            }
-            if (hasChanged(vb01.getNummer(), vb02.getNummer())) {
-                return true;
-            }
-            if (hasChanged(vb01.getRechtscharakter(), vb02.getRechtscharakter())) {
-                return true;
-            }
-            if (hasChanged(vb01.getVerbundenerplan(), vb02.getVerbundenerplan())) {
-                return true;
-            }
-        }
-        return false;
-    }
+    
+
    
-    public static boolean hasChanged(
-            de.gdiservice.bplan.Gemeinde[] gemeinden01, 
-            de.gdiservice.bplan.Gemeinde[] gemeinden02) {
-        if (gemeinden01 == null || gemeinden02 == null) {
-            throw new IllegalArgumentException("one Plan doesnt has gemeinden");
-        }
-        if (gemeinden01.length != gemeinden02.length) {
-            return true;
-        }
-        for (int i=0; i<gemeinden01.length; i++) {
-            if (!gemeinden01[i].equals(gemeinden02[i])) {
-                return true;
-            }
-        }
-        return false;
-    }
     
-    private static String toString(de.gdiservice.bplan.Gemeinde[] gemeinden) {
-        StringBuilder sb = new StringBuilder();
-        for (int i=0; i<gemeinden.length; i++) {
-            sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
-            sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
-            sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
-            sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
-        }
-        return sb.toString();
-    }
-
-    public static boolean hasChanged(FPlan plan, FPlan dbPlan) {
+    
 
 
-
-        if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
-            logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
-            return true;
-        }
-        if (BPlanImporter.hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
-            logger.info(String.format("<>Externereferenzes %s %s", plan.getExternereferenzes(), dbPlan.getExternereferenzes()));
-            return true;
-        }
-
-        if (plan.geom == null || dbPlan.geom == null) {
-            throw new IllegalArgumentException("one Plan doesnt has a geometry");
-        }
-        if (!plan.geom.equals(dbPlan.geom)) {
-            logger.info(String.format("<>geom %s %s", plan.geom, dbPlan.geom));
-            return true;
-        }
-        if (hasChanged(plan.wirksamkeitsdatum, dbPlan.wirksamkeitsdatum)) {
-            logger.info(String.format("<>inkrafttretensdatum %s %s", plan.wirksamkeitsdatum, dbPlan.wirksamkeitsdatum));
-            return true;
-        }
-        if (hasChanged(plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum)) {
-            logger.info(String.format("<>auslegungsstartdatum %s %s", plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum));
-            return true;
-        }
-        if (hasChanged(plan.auslegungsenddatum, dbPlan.auslegungsenddatum)) {
-            logger.info(String.format("<>auslegungsenddatum %s %s", plan.auslegungsenddatum, dbPlan.auslegungsenddatum));
-            return true;
-        }  
-        if (hasChanged(plan.name, dbPlan.name)) {
-            logger.info(String.format("<>name %s %s", plan.name, dbPlan.name));
-            return true;
-        }
-        if (hasChanged(plan.nummer, dbPlan.nummer)) {
-            logger.info(String.format("<>nummer %s %s", plan.nummer, dbPlan.nummer));
-            return true;
-        }
-        if (hasChanged(plan.planart, dbPlan.planart)) {
-            logger.info(String.format("<>planart %s %s", plan.planart, dbPlan.planart));
-            return true;
-        }
-        if (hasChanged(plan.rechtsstand, dbPlan.rechtsstand)) {
-            logger.info(String.format("<>rechtsstand %s %s", plan.rechtsstand, dbPlan.rechtsstand));
-            return true;
-        }
-        
-        if (hasChanged(plan.aendert, dbPlan.aendert)) {
-            logger.info(String.format("<>aendert %s %s", plan.aendert, dbPlan.aendert));
-            return true;
-        }
-        if (hasChanged(plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon)) {
-            logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
-            return true;
-        }
-//        if (hasChanged(plan.internalid, dbPlan.internalid)) {
-//            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
-//            return true;
-//        }
-        return false;
-    }
 
 
     public static void print(String text, FPlan bPlan) {
         StringBuilder sb = new StringBuilder();
         sb.append(text).append('\n');
-        sb.append('\t').append("[name=" + bPlan.name + ", gml_id=" + bPlan.gml_id + ", nummer=" + bPlan.nummer + ", planart="
+        sb.append('\t').append("[name=" + bPlan.getName() + ", gml_id=" + bPlan.getGml_id() + ", nummer=" + bPlan.getNummer() + ", planart="
                 + bPlan.planart + ", rechtsstand=" + bPlan.rechtsstand + ", wirksamkeitsdatum=" + bPlan.wirksamkeitsdatum);
         sb.append("\n\tgemeinde=[");
         if (bPlan.gemeinde!=null && bPlan.gemeinde.length>0) {
@@ -554,10 +421,10 @@ public class FPlanImporter {
         sb.append("\n\t").append(bPlan.gemeinde[0].getValue());
 
         sb.append("\n\texternereferenz=[");
-        PGExterneReferenz[] pgExterneReferenzs = bPlan.externeReferenzes;
+        PGSpezExterneReferenz[] pgExterneReferenzs = bPlan.getExternereferenzes();
         if (pgExterneReferenzs!=null) {
             for (int i = 0; i < pgExterneReferenzs.length; i++) {
-                ExterneRef exRef = pgExterneReferenzs[i].object;
+                SpezExterneRef exRef = pgExterneReferenzs[i].object;
                 sb.append("\n\t\tExterneRef [georefurl=" + exRef.georefurl + ", georefmimetype=" + exRef.georefmimetype + ", art=" + exRef.art
                         + ", informationssystemurl=" + exRef.informationssystemurl + ", referenzname=" + exRef.referenzname + ", referenzurl="
                         + exRef.referenzurl);
@@ -566,7 +433,7 @@ public class FPlanImporter {
 
             }
         }
-        sb.append("\n\tgeom=" + bPlan.geom + "]");
+        sb.append("\n\tgeom=" + bPlan.getGeom() + "]");
         System.out.println(sb);
     }
 

@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.dao;
 
 import java.sql.Array;
 import java.sql.Connection;
@@ -7,7 +7,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLType;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.LocalDate;
@@ -17,24 +16,28 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.UUID;
 
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.WKTWriter;
 import org.postgis.jts.JtsGeometry;
-import org.postgresql.PGConnection;
-import org.postgresql.PGNotification;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.gdiservice.bplan.poi.BPlan;
+import de.gdiservice.bplan.poi.CodeList;
+import de.gdiservice.bplan.poi.Gemeinde;
+import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
+import de.gdiservice.bplan.poi.PGSpezExterneReferenzAuslegung;
+import de.gdiservice.bplan.poi.PGVerbundenerPlan;
+import de.gdiservice.bplan.poi.PlanaufstellendeGemeinde;
+import de.gdiservice.dao.AbstractDAO;
 import de.gdiservice.util.DBUtil;
 
 
 
-public class BPlanDAO {
+public class BPlanDAO extends AbstractDAO<UUID, BPlan> {
 
     final static Logger logger = LoggerFactory.getLogger(BPlanDAO.class);
 
-    final static String[] COLLUMN_NAMES = new String[] {            
+    final static String[] COLUMN_NAMES = new String[] {            
             "gml_id",
             "name",
             "nummer",
@@ -74,32 +77,34 @@ public class BPlanDAO {
     };
     
 
-    final static String KEY_COLLUMN = "gml_id";
+    final static String KEY_COLUMN = "gml_id";
 
-    private final Connection conWrite;
-    private final Connection conRead;
-
-    private final String tableName;
+//    private final Connection conWrite;
+//    private final Connection conRead;
+//
+//    private final String tableName;
     
     
-    public BPlanDAO(Connection con, String tableName) {
-        this.conWrite = con;
-        this.conRead = con;
-        this.tableName = tableName;
-    }
+//    public BPlanDAO(Connection con, String tableName) {
+//        this.conWrite = con;
+//        this.conRead = con;
+//        this.tableName = tableName;
+//    }
 
 
     public BPlanDAO(Connection conWrite, Connection conRead, String tableName) {
-        this.conWrite = conWrite;
-        this.conRead = conRead;
-        this.tableName = tableName;
+        super(conWrite, conRead, tableName);
+//        this.conWrite = conWrite;
+//        this.conRead = conRead;
+//        this.tableName = tableName;
     }
 
-    private int setSQLParameter(Connection con, PreparedStatement stmt, BPlan bplan, int i) throws SQLException {
+    @Override
+    public int setSQLParameter(Connection con, PreparedStatement stmt, BPlan bplan, int i) throws SQLException {
         
         
-        stmt.setString(i++, bplan.name);
-        stmt.setString(i++, bplan.nummer);
+        stmt.setString(i++, bplan.getName());
+        stmt.setString(i++, bplan.getNummer());
 
         
         if (bplan.gemeinde != null) {
@@ -108,11 +113,11 @@ public class BPlanDAO {
             stmt.setArray(i++, null);
         }
 
-        if (bplan.externeReferenzes != null) {
-            if (bplan.externeReferenzes instanceof PGExterneReferenzAuslegung[]) {                    
-                stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", bplan.externeReferenzes));
+        if (bplan.getExternereferenzes() != null) {
+            if (bplan.getExternereferenzes() instanceof PGSpezExterneReferenzAuslegung[]) {                    
+                stmt.setArray(i++, con.createArrayOf("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"", bplan.getExternereferenzes()));
             } else {
-                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.externeReferenzes));
+                stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_spezexternereferenz\"", bplan.getExternereferenzes()));
             }
                 
         } else {
@@ -154,25 +159,25 @@ public class BPlanDAO {
             stmt.setObject(i++, null);
         }
 
-        if (bplan.geom!=null) {
-            stmt.setObject(i++, new JtsGeometry(bplan.geom));
+        if (bplan.getGeom()!=null) {
+            stmt.setObject(i++, new JtsGeometry(bplan.getGeom()));
         } else {
             stmt.setNull(i++, Types.OTHER);
         }
         
         
-        stmt.setObject(i++, bplan.konvertierung_id);
+        stmt.setObject(i++, bplan.getKonvertierungId());
 
 
-        stmt.setObject(i++, bplan.internalid); 
+        stmt.setObject(i++, bplan.getInternalId()); 
         
-        if (bplan.aendert != null) {
-            stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", bplan.aendert));
+        if (bplan.getAendert() != null) {
+            stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", bplan.getAendert()));
         } else {
             stmt.setArray(i++, null);
         }
-        if (bplan.wurdegeaendertvon != null) {
-            stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", bplan.wurdegeaendertvon));
+        if (bplan.getWurdeGeaendertVon() != null) {
+            stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", bplan.getWurdeGeaendertVon()));
         } else {
             stmt.setArray(i++, null);
         }
@@ -190,7 +195,7 @@ public class BPlanDAO {
             stmt.setObject(i++, null);
         }
 //      "untergangsdatum",
-        stmt.setObject(i++, bplan.untergangsdatum);
+        stmt.setObject(i++, bplan.getUntergangsdatum());
 //      "genehmigungsdatum",
         stmt.setObject(i++, bplan.getGenehmigungsdatum());
 //      "gruenordnungsplan",
@@ -255,13 +260,13 @@ public class BPlanDAO {
 
     public void insert(BPlan bplan) throws SQLException {
         PreparedStatement stmt = null;
-        logger.debug("insert gmlId="+bplan.gml_id);      
+        logger.debug("insert gmlId="+bplan.getGml_id());      
         try {           
-            String sql = DBUtil.getInsertSQLString(tableName, COLLUMN_NAMES);
+            String sql = DBUtil.getInsertSQLString(tableName, COLUMN_NAMES);
 //            logger.debug(sql);
             stmt = conWrite.prepareStatement(sql);
             int i=1;
-            stmt.setObject(i++, bplan.gml_id);
+            stmt.setObject(i++, bplan.getGml_id());
             setSQLParameter(conWrite, stmt, bplan, i);
             try {
 //                logger.debug("stmt: "+stmt.toString());
@@ -269,19 +274,6 @@ public class BPlanDAO {
             }
             catch (SQLException ex) {
                 logger.error("stmt: "+stmt.toString());
-//                System.err.println("Warnings="+con.getWarnings());
-//                PGConnection pgconn = con.unwrap(PGConnection.class);
-//                PGNotification[] notifications = pgconn.getNotifications();
-//                if (notifications!=null) {
-//                    System.err.println("Notifications.length="+notifications.length);
-//                    for (PGNotification notification : pgconn.getNotifications()) {
-//                        System.err.println(notification);
-//                    }
-//                } else {
-//                    System.err.println("keine Notifications");
-//                    System.err.println("keine Notifications");
-//                }
-//                ex.printStackTrace();
                 throw ex;
             }
 
@@ -295,14 +287,14 @@ public class BPlanDAO {
 
 
     public BPlan findById(UUID gmlId) throws SQLException {
-       logger.debug("findById "+tableName+" UUID="+gmlId);
+       logger.debug("findById(\""+gmlId+"\") in table=" +tableName);
 //       System.err.println("findById "+tableName+" UUID="+gmlId);
         BPlan bplan = null;
         
         PreparedStatement stmt = null;
         ResultSet rs = null;
         try {    
-            String sql = DBUtil.getSelectSQLString(tableName, COLLUMN_NAMES, new String[]  {"gml_id=?"});      
+            String sql = DBUtil.getSelectSQLString(tableName, COLUMN_NAMES, new String[]  {"gml_id=?"});      
 //            logger.debug(sql);
 //            PGConnection pgconn = conRead.unwrap(PGConnection.class);
 //            pgconn.addDataType("\"xplan_gml\".\"bp_status\"", CodeList.class);
@@ -311,7 +303,7 @@ public class BPlanDAO {
             rs = stmt.executeQuery();
 //            printColumns(rs);
             if (rs.next()) {
-                bplan = createBPlan(rs);
+                bplan = createObject(rs);
             }
         } finally {
             if (rs!=null) {
@@ -332,7 +324,7 @@ public class BPlanDAO {
          PreparedStatement stmt = null;
          ResultSet rs = null;
          try {    
-             String sql = DBUtil.getSelectSQLString(tableName, COLLUMN_NAMES, new String[]  {"internalid like ? or gml_id=?"});
+             String sql = DBUtil.getSelectSQLString(tableName, COLUMN_NAMES, new String[]  {"internalid like ? or gml_id=?"});
              sql = sql + " order by internalid";
              logger.debug(sql);
              stmt = conRead.prepareStatement(sql);
@@ -340,7 +332,7 @@ public class BPlanDAO {
              stmt.setObject(2, gmlId);
              rs = stmt.executeQuery();
              while (rs.next()) {
-                 BPlan bplan = createBPlan(rs);
+                 BPlan bplan = createObject(rs);
                  plaene.add(bplan);
              }
          } finally {
@@ -369,11 +361,11 @@ public class BPlanDAO {
         ResultSet rs = null;
         try {      
             stmt = conRead.createStatement();
-            String sql = DBUtil.getSelectSQLString(tableName, COLLUMN_NAMES, whereClauses, maxCount);
+            String sql = DBUtil.getSelectSQLString(tableName, COLUMN_NAMES, whereClauses, maxCount);
             logger.debug(sql);
             rs = stmt.executeQuery(sql);
             while (rs.next()) {
-                bPlans.add(createBPlan(rs));
+                bPlans.add(createObject(rs));
             }
             return bPlans;
         }
@@ -387,16 +379,16 @@ public class BPlanDAO {
         }
     }
     
-    BPlan createBPlan(ResultSet rs) throws SQLException {
+    protected BPlan createObject(ResultSet rs) throws SQLException {
         // "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum", "auslegungsstartdatum[]", "auslegungsenddatum[]",
         //                                                                             "rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
         // "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum","rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
 //        printColumns(rs);
         int i=1;
         BPlan bplan = new BPlan();
-        bplan.gml_id = rs.getObject(i++, UUID.class);
-        bplan.name = rs.getString(i++);
-        bplan.nummer = rs.getString(i++);
+        bplan.setGml_id(rs.getObject(i++, UUID.class));
+        bplan.setName(rs.getString(i++));
+        bplan.setNummer(rs.getString(i++));
 
         try {
 
@@ -406,9 +398,9 @@ public class BPlanDAO {
             if (ar !=null) {
 //                logger.info("ar.getBaseTypeName()="+ar.getBaseTypeName());
                 if ("\"xplankonverter\".\"xp_spezexternereferenzauslegung\"".equals(ar.getBaseTypeName())) {
-                    bplan.externeReferenzes = getArray(ar, PGExterneReferenzAuslegung[].class);
+                    bplan.setExterneReferenzes(getArray(ar, PGSpezExterneReferenzAuslegung[].class));
                 } else {
-                    bplan.externeReferenzes = getArray(ar, PGExterneReferenz[].class);
+                    bplan.setExterneReferenzes( getArray(ar, PGSpezExterneReferenz[].class) );
                 }
             }
 
@@ -429,25 +421,25 @@ public class BPlanDAO {
 
 
             JtsGeometry pGobject = (JtsGeometry) rs.getObject(i++);          
-            bplan.geom = pGobject!=null ? pGobject.getGeometry() : null;
+            bplan.setGeom(pGobject!=null ? pGobject.getGeometry() : null);
             
-            bplan.konvertierung_id = (Integer)rs.getObject(i++);
+            bplan.setKonvertierungId(rs.getObject(i++, Integer.class));
             
             
-            bplan.internalid = rs.getString(i++); 
-            bplan.aendert = getArray(rs.getArray(i++), PGVerbundenerPlan[].class);
-            bplan.wurdegeaendertvon = getArray(rs.getArray(i++), PGVerbundenerPlan[].class);
+            bplan.setInternalId(rs.getString(i++)); 
+            bplan.setAendert( getArray(rs.getArray(i++), PGVerbundenerPlan[].class));
+            bplan.setWurdeGeaendertVon( getArray(rs.getArray(i++), PGVerbundenerPlan[].class));
             
 //            "status",
             Object oStatus = rs.getObject(i++);
-            logger.debug("oStatus=\""+oStatus+"\" "+((oStatus==null)? "null" : oStatus.getClass()));
+//            logger.debug("oStatus=\""+oStatus+"\" "+((oStatus==null)? "null" : oStatus.getClass()));
             bplan.setStatus((CodeList)oStatus);
 //            "verfahren",
             bplan.verfahren = rs.getString(i++);
 //            "untergangsdatum",
-            bplan.untergangsdatum = toLocalDate(rs.getDate(i++));
+            bplan.setUntergangsdatum(toLocalDate(rs.getDate(i++)));
 //            "genehmigungsdatum",
-            bplan.genehmigungsdatum = toLocalDate(rs.getDate(i++));
+            bplan.setGenehmigungsdatum(toLocalDate(rs.getDate(i++)));
 //            "gruenordnungsplan",
             bplan.gruenordnungsplan = (Boolean)rs.getObject(i++);
 //            "ausfertigungsdatum",
@@ -485,10 +477,10 @@ public class BPlanDAO {
         } 
         catch (Exception e) {                   
             if (e.getCause() != null) {
-                throw new SQLException("Error interpreting Data gml_id=\""+bplan.gml_id+"\" cause=\""+e.getCause().getMessage()+"\"", e);
+                throw new SQLException("Error interpreting Data gml_id=\""+bplan.getGml_id()+"\" cause=\""+e.getCause().getMessage()+"\"", e);
             } else {
                 printColumns(rs);
-                throw new SQLException("Error interpreting Data gml_id=\""+bplan.gml_id+"\" cause=\""+e.getMessage()+"\"", e);
+                throw new SQLException("Error interpreting Data gml_id=\""+bplan.getGml_id()+"\" cause=\""+e.getMessage()+"\"", e);
             }
         }
     }
@@ -536,7 +528,7 @@ public class BPlanDAO {
         return con.createArrayOf(typeName, pGobjects);
     }  
 
-    private static String getString(PGobject pgObject) {
+    public static String getString(PGobject pgObject) {
         return pgObject == null ? null : pgObject.getValue();
     }
 //    private static Date getDate(PGobject pgObject) {
@@ -625,8 +617,8 @@ public class BPlanDAO {
     static void printTypes(List<BPlan> bPlans) {
         TreeSet<String> set = new TreeSet<>();
         for (BPlan plan : bPlans) {
-            if (plan.externeReferenzes !=null) {
-                for (PGExterneReferenz ref : plan.externeReferenzes) {
+            if (plan.getExternereferenzes() !=null) {
+                for (PGSpezExterneReferenz ref : plan.getExternereferenzes()) {
                     String s = ref.object.typ + " " + ref.object.beschreibung;
                     set.add(s);
                 }
@@ -638,63 +630,62 @@ public class BPlanDAO {
         }
     }
 
-    public String validateGeom(Geometry geom) throws SQLException {
-        PreparedStatement stmt = null;
-        String result = null;
-        try {
-            stmt = conRead.prepareStatement("select public.st_isvalidreason(?)");
-            WKTWriter writer = new WKTWriter(2);
-            stmt.setObject(1, writer.write(geom), Types.OTHER);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                result = rs.getString(1);
-            }
-        }
-        finally {
-            if (stmt!=null) {
-                try { stmt.close(); } catch (SQLException e) {}
-            }
-        } 
-        return result;
+
+
+//    @Override
+//    public int update(BPlan bplan) throws SQLException {
+//        
+//        PreparedStatement stmt = null;
+//        logger.debug("update gmlId="+bplan.gml_id);
+//        try {           
+//            String sql = DBUtil.getUpdateSQLString(tableName, COLUMN_NAMES, KEY_COLUMN);
+////            logger.debug(sql);
+//            stmt = conWrite.prepareStatement(sql);
+//
+//            int i = setSQLParameter(conWrite, stmt, bplan, 1);            
+//            // where clause
+////            System.err.println("i="+i);
+//            stmt.setObject(i++, bplan.gml_id);
+//            
+//            
+//            try {
+//                logger.info("stmt={}", stmt.toString().substring(0, 240));
+//                return stmt.executeUpdate();                
+//            }
+//            catch (SQLException ex) {
+//                logger.error("Fehler writing: \""+bplan+"\"", ex);
+//                throw ex;
+//            }
+//
+//
+//            //      stmt.executeBatch();
+//
+//        }
+//        finally {
+//            if (stmt!=null) {
+//                try { stmt.close(); } catch (SQLException e) {}
+//            }
+//        }    
+//    }
+
+
+    @Override
+    public String[] getColumns() {
+        return BPlanDAO.COLUMN_NAMES;
     }
 
-    public boolean update(BPlan bplan) throws SQLException {
-        
-        PreparedStatement stmt = null;
-        boolean success = false;
-        logger.debug("update gmlId="+bplan.gml_id);
-        try {           
-            String sql = DBUtil.getUpdateSQLString(tableName, COLLUMN_NAMES, KEY_COLLUMN);
-//            logger.debug(sql);
-            stmt = conWrite.prepareStatement(sql);
 
-            int i = setSQLParameter(conWrite, stmt, bplan, 1);            
-            // where clause
-            System.err.println("i="+i);
-            stmt.setObject(i++, bplan.gml_id);
-            
-            
-            try {
-                logger.info("stmt={}", stmt.toString().substring(0, 240));
-                int updatedRows =  stmt.executeUpdate();
-                success = updatedRows == 1;
-            }
-            catch (SQLException ex) {
-                logger.error("Fehler writing: \""+bplan+"\"", ex);
-                throw ex;
-            }
-
-
-            //      stmt.executeBatch();
-
-        }
-        finally {
-            if (stmt!=null) {
-                try { stmt.close(); } catch (SQLException e) {}
-            }
-        }    
-        return success;
+    @Override
+    public String getKeyColumn() {
+        return BPlanDAO.KEY_COLUMN;
     }
+
+
+    
+
+
+
+
 
 
 

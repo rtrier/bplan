@@ -1,6 +1,6 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
-public class ExterneRefAuslegung extends ExterneRef {
+public class ExterneRefAuslegung extends SpezExterneRef {
     
     public Boolean nurzurauslegung;
 

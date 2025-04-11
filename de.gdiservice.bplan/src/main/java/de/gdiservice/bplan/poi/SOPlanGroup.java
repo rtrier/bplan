@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,13 +27,13 @@ public class SOPlanGroup {
         List<SOPlanIndexed> plans = new ArrayList<>();
         List<SOPlan> result;
         
-        PGExterneReferenz[] pgExterneReferenzs = orgPlan.getExternereferenzes();
+        PGSpezExterneReferenz[] pgExterneReferenzs = orgPlan.getExternereferenzes();
         
         int idx = -1;
         SOPlanIndexed nPlan = null;
         if (pgExterneReferenzs!=null && pgExterneReferenzs.length>0) {
             for (int i=0; i<pgExterneReferenzs.length; i++) {
-                ExterneRef er = pgExterneReferenzs[i].getExterneRef();
+                SpezExterneRef er = pgExterneReferenzs[i].getExterneRef();
                 String refName = er.referenzname;
                 if (refName == null) {
                     throw new IllegalArgumentException("Fehler beim Aufteilen des SOPlans, ExterneReferenz ohne ReferenzName ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");

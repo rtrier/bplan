@@ -12,17 +12,21 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 //import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.postgresql.util.PGtokenizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import de.gdiservice.bplan.BPlan;
-import de.gdiservice.bplan.ExterneRefAuslegung;
-import de.gdiservice.bplan.Gemeinde;
-import de.gdiservice.bplan.PGExterneReferenz;
-import de.gdiservice.bplan.PGExterneReferenzAuslegung;
+import de.gdiservice.bplan.poi.BPlan;
+import de.gdiservice.bplan.poi.ExterneRefAuslegung;
+import de.gdiservice.bplan.poi.Gemeinde;
+import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
+import de.gdiservice.bplan.poi.PGSpezExterneReferenzAuslegung;
 
 public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
+    
+    final static Logger logger = LoggerFactory.getLogger(BFitzBPlanFactoryV5_1.class);
     
     boolean usePGExterneReferenzAuslegung = false;
     
@@ -84,7 +88,8 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
 
         String sGemeinde = (String) f.getAttribute("gemeinde");
         if (sGemeinde!=null) {
-            Gemeinde gemeinde = objectReader.readValue(sGemeinde, Gemeinde.class);		
+            Gemeinde gemeinde = objectReader.readValue(sGemeinde, Gemeinde.class);
+            logger.info("gemeinde="+gemeinde);
             bplan.setGemeinde ( new Gemeinde[] {gemeinde} ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
         }
 
@@ -109,13 +114,13 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
                throw new IllegalArgumentException("String \""+sExtenalRefs+"\" could not be parsed as an Array of externereferenz"); 
             }	
             if (extRefs != null && extRefs.length>0) {
-                PGExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGExterneReferenzAuslegung[extRefs.length] : new PGExterneReferenz[extRefs.length];
+                PGSpezExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGSpezExterneReferenzAuslegung[extRefs.length] : new PGSpezExterneReferenz[extRefs.length];
                 for (int i=0; i<extRefs.length; i++) {
                     String type = extRefs[i].getTyp();
                     if ("5000".equals(type) || "2900".equals(type) || "3100".equals(type)) {
                         extRefs[i].typ = "9999";      
                     }                     
-                    pgRefs[i] = usePGExterneReferenzAuslegung ? new PGExterneReferenzAuslegung(extRefs[i]) : new PGExterneReferenz(extRefs[i]);
+                    pgRefs[i] = usePGExterneReferenzAuslegung ? new PGSpezExterneReferenzAuslegung(extRefs[i]) : new PGSpezExterneReferenz(extRefs[i]);
                 }
                 bplan.setExterneReferenzes(pgRefs);
                 // bplan.externeReferenzes = extRefs; // ="[{"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 1. Änderung des Bebauungsplans (438,49 KB)", "datum" : "2003-10-07", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 2. Änderung des Bebauungsplans (2,47 MB)", "datum" : "2012-04-03", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 3. Änderung des Bebauungsplans (2,3 MB)", "datum" : "2017-12-01", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Begründung zur 3. Änderung des Bebauungsplans (186,38 KB)", "datum" : "2017-12-01", "typ" : "1010"}]"

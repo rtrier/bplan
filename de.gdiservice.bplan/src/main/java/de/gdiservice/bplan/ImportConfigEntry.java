@@ -17,6 +17,10 @@ public class ImportConfigEntry {
   public Object updated_at;
   public Object updated_from;
   public Object version;
+  /**
+    * Prefix für Test-Tabellen("${schema}."+prefix+"${tableName}") 
+    */
+  public String testtable_prefix; 
   
   @Override
   public String toString() {

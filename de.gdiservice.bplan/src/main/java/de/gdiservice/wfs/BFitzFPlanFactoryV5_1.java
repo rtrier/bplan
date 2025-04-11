@@ -1,8 +1,6 @@
 package de.gdiservice.wfs;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
@@ -18,13 +16,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
-import de.gdiservice.bplan.CodeList;
-import de.gdiservice.bplan.ExterneRef;
-import de.gdiservice.bplan.FPlan;
-import de.gdiservice.bplan.Gemeinde;
-import de.gdiservice.bplan.PGExterneReferenz;
-import de.gdiservice.bplan.PGExterneReferenzAuslegung;
-import de.gdiservice.bplan.PlanaufstellendeGemeinde;
+import de.gdiservice.bplan.poi.CodeList;
+import de.gdiservice.bplan.poi.SpezExterneRef;
+import de.gdiservice.bplan.poi.FPlan;
+import de.gdiservice.bplan.poi.Gemeinde;
+import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
+import de.gdiservice.bplan.poi.PGSpezExterneReferenzAuslegung;
+import de.gdiservice.bplan.poi.PlanaufstellendeGemeinde;
 
 public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
 
@@ -71,8 +69,8 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         String sDate = (String) f.getAttribute("wirksamkeitsdatum");
         if (sDate!=null && sDate.trim().length()>0) {
             try {
-                fplan.setWirksamkeitsdatum( (new SimpleDateFormat("yyyy-MM-dd")).parse(sDate));
-            } catch (ParseException e) {
+                fplan.setWirksamkeitsdatum( LocalDate.parse(sDate));
+            } catch (DateTimeParseException e) {
                 throw new IOException("Konnt Datum nicht \""+sDate+"\" parsen");
             } //="2018-01-05"
         }
@@ -120,20 +118,20 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         
         String sExtenalRefs = (String) f.getAttribute("externereferenz");
         if (sExtenalRefs!=null && sExtenalRefs.length()>0) {
-            ExterneRef[] extRefs;
+            SpezExterneRef[] extRefs;
             try {
-                extRefs = objectReader.readValue(sExtenalRefs, ExterneRef[].class);
+                extRefs = objectReader.readValue(sExtenalRefs, SpezExterneRef[].class);
             } catch (IOException e) {
                throw new IllegalArgumentException("String \""+sExtenalRefs+"\" could not be parsed as an Array of externereferenz"); 
             }	
             if (extRefs != null && extRefs.length>0) {                
-                PGExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGExterneReferenzAuslegung[extRefs.length] : new PGExterneReferenz[extRefs.length];
+                PGSpezExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGSpezExterneReferenzAuslegung[extRefs.length] : new PGSpezExterneReferenz[extRefs.length];
                 for (int i=0; i<extRefs.length; i++) {
                     String type = extRefs[i].getTyp();
                     if ("5000".equals(type) || "2900".equals(type) || "3100".equals(type)) {
                         extRefs[i].typ = "9999";      
                     }                    
-                    pgRefs[i] = usePGExterneReferenzAuslegung ? new PGExterneReferenzAuslegung(extRefs[i]) : new PGExterneReferenz(extRefs[i]);
+                    pgRefs[i] = usePGExterneReferenzAuslegung ? new PGSpezExterneReferenzAuslegung(extRefs[i]) : new PGSpezExterneReferenz(extRefs[i]);
                 }
                 fplan.setExterneReferenzes(pgRefs);
                 // bplan.externeReferenzes = extRefs; // ="[{"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_1_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 1. Änderung des Bebauungsplans (438,49 KB)", "datum" : "2003-10-07", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_2_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 2. Änderung des Bebauungsplans (2,47 MB)", "datum" : "2012-04-03", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_1.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Satzung über 3. Änderung des Bebauungsplans (2,3 MB)", "datum" : "2017-12-01", "typ" : "1060"}, {"georefurl" : null, "georefmimetype" : null, "art" : "Dokument", "informationssystemurl" : "https://www.amt-rostocker-heide.de/amt-rostocker-heide/Geo-Daten-Amt-Rostocker-Heide/", "referenzname" : "amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzurl" : "https://service.btfietz.de/wmsdata/amt_rostocker_heide/amt_rostocker_heide_moenchhagen_bplan_3_1_3_2.pdf", "referenzmimetype" : {"codespace" : "https://bauleitplaene-mv.de/codelist/XP_MimeTypes.xml", "id" : "application/pdf", "value" : "application/pdf"}, "beschreibung" : "Begründung zur 3. Änderung des Bebauungsplans (186,38 KB)", "datum" : "2017-12-01", "typ" : "1010"}]"
@@ -203,14 +201,24 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         
    
       String sPlanaufstellendegemeinde = GeolexBPlanFactory.getAsString(f, "planaufstellendegemeinde");
-      if (sPlanaufstellendegemeinde!=null) {
-          try {
-              PlanaufstellendeGemeinde gemeinde = objectReader.readValue(sPlanaufstellendegemeinde, PlanaufstellendeGemeinde.class);
-              fplan.setPlanaufstellendeGemeinde( new PlanaufstellendeGemeinde[] {gemeinde} ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
-          } catch (MismatchedInputException ex) {
-              throw new IllegalArgumentException("Konnte den String \""+sPlanaufstellendegemeinde+"\" für planaufstellendegemeinde nicht als JSON interpretieren.", ex);
+      if (sPlanaufstellendegemeinde != null) {
+          // "{"ags" : "13072072", "rs" : "130725260072","gemeindename":"Mönchhagen", "ortsteilname":"Mönchhagen"}"
+          if (sPlanaufstellendegemeinde.startsWith("[") && sPlanaufstellendegemeinde.endsWith("]")) {
+              try {
+                  PlanaufstellendeGemeinde[] gemeinden = objectReader.readValue(sPlanaufstellendegemeinde, PlanaufstellendeGemeinde[].class);
+                  fplan.setPlanaufstellendeGemeinde(gemeinden); 
+              } catch (MismatchedInputException ex) {
+                  throw new IllegalArgumentException("Konnte den String \"" + sPlanaufstellendegemeinde + "\" für planaufstellendegemeinde nicht als Array interpretieren.", ex);
+              } 
+          } else {
+              try {
+                  PlanaufstellendeGemeinde gemeinde = objectReader.readValue(sPlanaufstellendegemeinde, PlanaufstellendeGemeinde.class);
+                  fplan.setPlanaufstellendeGemeinde(new PlanaufstellendeGemeinde[] { gemeinde }); 
+              } catch (MismatchedInputException ex) {
+                  throw new IllegalArgumentException("Konnte den String \"" + sPlanaufstellendegemeinde + "\" für planaufstellendegemeinde nicht als Object interpretieren.", ex);
+              }           
           }
-      } 
+      }
         
       CodeList status = GeolexBPlanFactory.getCodeList(objectReader, "xplan_gml.bp_status", f, "status");
       fplan.setStatus(status);        

@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 public class PlanaufstellendeGemeinde extends Gemeinde {
 

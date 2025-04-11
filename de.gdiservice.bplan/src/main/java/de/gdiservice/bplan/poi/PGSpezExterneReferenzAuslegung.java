@@ -1,21 +1,23 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import java.sql.SQLException;
 import java.text.ParseException;
 
 import org.postgresql.util.PGtokenizer;
 
-public class PGExterneReferenzAuslegung extends PGExterneReferenz {
+import de.gdiservice.bplan.PGUtil;
+
+public class PGSpezExterneReferenzAuslegung extends PGSpezExterneReferenz {
 
     /**
      * 
      */
     private static final long serialVersionUID = 1L;
     
-    public PGExterneReferenzAuslegung() {
+    public PGSpezExterneReferenzAuslegung() {
         
     }
-    public PGExterneReferenzAuslegung(ExterneRef bFitzExterneRef) {
+    public PGSpezExterneReferenzAuslegung(SpezExterneRef bFitzExterneRef) {
         super(bFitzExterneRef);
       }
 

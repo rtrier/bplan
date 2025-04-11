@@ -5,9 +5,9 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SpezExterneRef {
+public class ExterneRef {
     
-    final static Logger logger = LoggerFactory.getLogger(SpezExterneRef.class);
+    final static Logger logger = LoggerFactory.getLogger(ExterneRef.class);
   
   private static final long serialVersionUID = 1L;
   
@@ -20,8 +20,7 @@ public class SpezExterneRef {
   public Referenzmimetype referenzmimetype;
   public String beschreibung;
   public Date datum;
-  public String typ;
-  public Boolean nurzurauslegung;
+
   
   
   public String getGeorefurl() {
@@ -78,19 +77,6 @@ public class SpezExterneRef {
   public void setDatum(Date datum) {
     this.datum = datum;
   }
-  public String getTyp() {
-    return typ;
-  }
-  public void setTyp(String typ) {
-    this.typ = typ;
-  }
-  public Boolean isNurzurauslegung() {
-      return nurzurauslegung;
-  }
-  public void setNurzurauslegung(Boolean nurzurauslegung) {
-      this.nurzurauslegung = nurzurauslegung;
-  }  
-  
   
   
   public static long getSerialversionuid() {
@@ -109,7 +95,6 @@ public int hashCode() {
     result = prime * result + ((referenzmimetype == null) ? 0 : referenzmimetype.hashCode());
     result = prime * result + ((referenzname == null) ? 0 : referenzname.hashCode());
     result = prime * result + ((referenzurl == null) ? 0 : referenzurl.hashCode());
-    result = prime * result + ((typ == null) ? 0 : typ.hashCode());
     return result;
 }
 @Override
@@ -120,7 +105,7 @@ public boolean equals(Object obj) {
         return false;
     if (getClass() != obj.getClass())
         return false;
-    SpezExterneRef other = (SpezExterneRef) obj;
+    ExterneRef other = (ExterneRef) obj;
     if (art == null) {
         if (other.art != null)
             return false;
@@ -165,11 +150,6 @@ public boolean equals(Object obj) {
             return false;
     } else if (!referenzurl.equals(other.referenzurl))
         return false;
-    if (typ == null) {
-        if (other.typ != null)
-            return false;
-    } else if (!typ.equals(other.typ))
-        return false;
     return true;
 }
 @Override
@@ -177,7 +157,7 @@ public String toString() {
     return "ExterneRef [georefurl=" + georefurl + ", georefmimetype=" + georefmimetype + ", art=" + art
             + ", informationssystemurl=" + informationssystemurl + ", referenzname=" + referenzname + ", referenzurl="
             + referenzurl + ", referenzmimetype=" + referenzmimetype + ", beschreibung=" + beschreibung + ", datum="
-            + datum + ", typ=" + typ + ", nurzurauslegung=" + nurzurauslegung +"]";
+            + datum + "]";
 }
     
 

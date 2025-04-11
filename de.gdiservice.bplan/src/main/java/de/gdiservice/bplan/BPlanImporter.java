@@ -20,12 +20,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import de.gdiservice.bplan.VerbundenerPlan.RechtscharakterPlanaenderung;
+import de.gdiservice.bplan.poi.*;
+import de.gdiservice.bplan.dao.*;
 import de.gdiservice.bplan.konvertierung.Gemeinde;
 import de.gdiservice.bplan.konvertierung.GemeindeDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung;
 import de.gdiservice.bplan.konvertierung.Konvertierung.KonvertierungStatus;
 import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
+import de.gdiservice.bplan.poi.BPlan;
+import de.gdiservice.bplan.poi.VerbundenerPlan.RechtscharakterPlanaenderung;
 import de.gdiservice.util.DBConnectionParameter;
 import de.gdiservice.util.EMailSender;
 import de.gdiservice.wfs.BFitzBPlanFactory;
@@ -34,12 +37,14 @@ import de.gdiservice.wfs.WFSClient;
 import de.gdiservice.wfs.WFSFactory;
 
 
-public class BPlanImporter {
+
+public class BPlanImporter implements XPPlanImporterI {
 
     final static Logger logger = LoggerFactory.getLogger(BPlanImporter.class);
     
 
     protected String bplanTable;
+    
     protected String konvertierungTable;
     
     protected String kvwmapUrl;
@@ -60,6 +65,7 @@ public class BPlanImporter {
 
     public BPlanImporter(String konvertierungTable, String bplanTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
         this.bplanTable = bplanTable;
+        
         this.konvertierungTable = konvertierungTable;
         this.kvwmapUrl = kvwmapUrl;
         this.kvwmapLoginName = kvwmapLoginName;
@@ -115,39 +121,56 @@ public class BPlanImporter {
                     if ("Valid Geometry".equals(geomValidierungsResult)) {
 
                         List<BPlan> listDBPlaene = bplanDao.findByInternalIdLikeGmlId(plan.getGml_id());
-                        
+                        logger.info("findByInternalIdLikeGmlId Found "+listDBPlaene.size()+" Pläne");                        
                         /**
                          * Setzen der Felder aendert und wurdegeaendertvon
                          */
                         BPlan previousPlan = null;
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             BPlan teilPlan = teilPlaene.get(teilPlanNr);
-                            teilPlan.setInternalId(plan.getGml_id()+"-"+teilPlanNr);
+                            String sTeilPlanNr = (teilPlanNr<10 ? "0"+teilPlanNr : String.valueOf(teilPlanNr));
+                            teilPlan.setInternalId(plan.getGml_id()+"-"+sTeilPlanNr);
                             
+                            BPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
+                            if (teilPlanNr == 0 && listDBPlaene.size()>0) {
+                                teilPlan.setGml_id(listDBPlaene.get(0).getGml_id());
+                            }
                             if (teilPlanNr>0) {
                                 UUID teilPlanUUID = (teilPlanNr<listDBPlaene.size()) ? listDBPlaene.get(teilPlanNr).getGml_id() : UUID.randomUUID();
                                 teilPlan.setGml_id(teilPlanUUID);
 //                                teilPlan.name = teilPlan.name + " " + String.valueOf(teilPlanNr) + ". Änderung";
-                                VerbundenerPlan aendert = new VerbundenerPlan(plan.name, RechtscharakterPlanaenderung.Aenderung, plan.nummer, previousPlan.getGml_id().toString());
+                                VerbundenerPlan aendert = new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), previousPlan.getGml_id().toString());
                                 teilPlan.setAendert(aendert);
-                                VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.name, RechtscharakterPlanaenderung.Aenderung, plan.nummer, teilPlan.getGml_id().toString()); 
+                                VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), teilPlan.getGml_id().toString());                                
                                 previousPlan.setWurdeGeaendertVon(wurdegeaendertvon);
+                            }
+                            if (dbPlan != null) {
+                                logger.info(teilPlanNr+"------ "+teilPlan.getGml_id()+"  "+ dbPlan.getGml_id()+" "+teilPlan.getName() +" " +dbPlan.getName());
                             }
                             previousPlan = teilPlan; 
                             
                         }
                         
                         
+//                        for (int teilPlanNr=0; teilPlanNr<listDBPlaene.size(); teilPlanNr++) {
+//                            BPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
+//                            String aendert = (dbPlan.getAendert()==null ? "null" : dbPlan.getAendert()[0].getVerbundenerPlan().getVerbundenerplan());                
+//                            String wurdegeaendert = (dbPlan.getWurdeGeaendertVon()==null ? "null" : dbPlan.getWurdeGeaendertVon()[0].getVerbundenerPlan().getVerbundenerplan());                
+//                            logger.info(teilPlanNr+"------ "+dbPlan.getGml_id()+"\t"+ aendert+"\t"+wurdegeaendert);    
+//                        }
+                        
+                        
                         GemeindeDAO gemeindeDAO = new GemeindeDAO(conRead);
                         
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
+//                        for (int teilPlanNr=1000; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             BPlan teilPlan = teilPlaene.get(teilPlanNr);
                             BPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
-                            logger.info("Teilplaene: {} {}/{} {} {}", plan.getGml_id(), teilPlanNr, teilPlaene.size(), teilPlan.getName(), dbPlan==null ? "null" : dbPlan.getName());
+                            logger.info("Teilplaene: {} {}/{} {} {}", plan.getGml_id(), (teilPlanNr+1), teilPlaene.size(), teilPlan.getName(), dbPlan==null ? "null" : dbPlan.getName());
                             Konvertierung konvertierung;
                             if (dbPlan == null) {
                                 // neuer BPlan                                
-                                de.gdiservice.bplan.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
+                                de.gdiservice.bplan.poi.Gemeinde gemeinde = teilPlan.getGemeinde()[0];
                                 List<Gemeinde> kvGemeinden = gemeindeDAO.find(gemeinde.getRs(), Integer.parseInt(gemeinde.getAgs()), gemeinde.getGemeindename(),gemeinde.getOrtsteilname());
                                 if (kvGemeinden==null || kvGemeinden.size()==0) {
                                     throw new IllegalArgumentException("Gemeinde "+gemeinde+" vom WFS ist nicht in der DB hinterlegt.");
@@ -185,6 +208,7 @@ public class BPlanImporter {
                                 Konvertierung dbKonvertierung = konvertierungDAO.insert(konvertierung);                    
                                 teilPlan.setKonvertierungId(dbKonvertierung.id);
                                 bplanDao.insert(teilPlan);
+                                logger.debug("inserted "+teilPlan.getGml_id()+" konvertierungsId="+plan.getKonvertierungId());
                                 conWrite.commit();
                                 
                                 boolean succeded = validate(konvertierung, teilPlan, kvwmapUrl, importLogger);
@@ -205,17 +229,20 @@ public class BPlanImporter {
                                 importLogger.addLine(String.format("inserted %s", teilPlan.getGml_id()));
     
                             } else {
-                                // update BPlan                                
-                                if (BPlanImporter.hasChanged(teilPlan, dbPlan)) {
+                                // update BPlan   
+                                logger.debug("Plan "+plan.getGml_id()+" dbPlan "+dbPlan.getGml_id()+ " mit KonvertierungId="+dbPlan.getKonvertierungId());
+                                if (HasChangedFunctions.hasChanged(teilPlan, dbPlan)) {
                                     logger.debug("update plan");
                                     teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
+                                    // setze die Orginal
+                                    teilPlan.setKonvertierungId(dbPlan.getKonvertierungId());
                                     bplanDao.update(teilPlan);
-                                    int updateCount = konvertierungDAO.update(teilPlan.konvertierung_id);
+                                    int updateCount = konvertierungDAO.update(teilPlan.getKonvertierungId());
                                     if (updateCount == 0) {
                                         throw new IllegalArgumentException("In der DB existiert ein BPlan mit der gmlId. Der zugehörige Eintrag in der Konvertierungs-Tabelle existiert aber nicht.");
                                     }
-                                    konvertierungDAO.updatePublishFlag(teilPlan.konvertierung_id, false);
-                                    konvertierung = konvertierungDAO.find(teilPlan.konvertierung_id); 
+                                    konvertierungDAO.updatePublishFlag(teilPlan.getKonvertierungId(), false);
+                                    konvertierung = konvertierungDAO.find(teilPlan.getKonvertierungId()); 
                                     
                                     logger.info("BPLanImporter: Plan gmlId=\""+teilPlan.getGml_id()+"\" updated.");
                                     importLogger.addLine(String.format("updated %s", teilPlan.getGml_id()));
@@ -246,8 +273,8 @@ public class BPlanImporter {
                     catch (SQLException e) {
                         logger.error("rollback Error", e);
                     }
-                    importLogger.addError("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
-                    logger.error("error updating BPlan [gmlId="+ plan.gml_id +" name=\""+ plan.name +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
+                    importLogger.addError("error updating BPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\" error:["+ex.getMessage()+"]");
+                    logger.error("error updating BPlan [gmlId="+ plan.getGml_id() +" name=\""+ plan.getName() +"\"] from service \"" + entry.bezeichnung + "\" with url=\"" + entry.onlineresource +"\"", ex);
                 } 
             }
         }
@@ -262,9 +289,9 @@ public class BPlanImporter {
      * @return
      */
     private boolean isStelleResponsible(Integer stelle_id, BPlan plan) {
-        de.gdiservice.bplan.Gemeinde[] gemeinden = plan.getGemeinde();
+        de.gdiservice.bplan.poi.Gemeinde[] gemeinden = plan.getGemeinde();
         if (gemeinden!=null) {
-            for (de.gdiservice.bplan.Gemeinde gemeinde : gemeinden) {
+            for (de.gdiservice.bplan.poi.Gemeinde gemeinde : gemeinden) {
                 if (gemeinde.rs.startsWith(String.valueOf(stelle_id))) {
                     return true;
                 }
@@ -397,38 +424,39 @@ public class BPlanImporter {
         }
     }
 
-    public void importGeoplexWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
-        
-        List<BPlan> bPlans = null;        
-        try {
-            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
-//            &COUNT=1200";
-            importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
-            bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
-        } 
-        catch (Exception ex) {
-            logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);
-            importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
-        }        
-        for (int i=0; i<bPlans.size(); i++) {
-            BPlan plan = bPlans.get(i);
-            System.err.println("-----------------plan-------" + i + "-----------------------");
-            BPlan.print(plan);
-        }
-        
-        
-        
-
-//        updateBPlaene(con, importLogger, entry, bPlans);
-        
-    }
+//    public void importGeoplexWFS(Connection con, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
+//        
+//        List<BPlan> bPlans = null;        
+//        try {
+//            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+////            &COUNT=1200";
+//            importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
+//            bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
+//        } 
+//        catch (Exception ex) {
+//            logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);
+//            importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
+//        }        
+//        for (int i=0; i<bPlans.size(); i++) {
+//            BPlan plan = bPlans.get(i);
+//            System.err.println("-----------------plan-------" + i + "-----------------------");
+//            BPlan.print(plan);
+//        }
+//        
+//        
+//        
+//
+////        updateBPlaene(con, importLogger, entry, bPlans);
+//        
+//    }
     public void importWFS(Connection conWrite, Connection conRead, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
 
         List<BPlan> bPlans = null;        
         try {
             String sVersion = (entry.onlineresource.indexOf("nwm")>=0) ? "2.0.0" : "1.1.0";
             
-            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+//            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833&COUNT=50";
             
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
             bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
@@ -443,359 +471,304 @@ public class BPlanImporter {
     }
 
 
-    private static boolean hasChanged(Object[] o1, Object[] o2) {
-        if (o1==null) {
-            if (o2!=null) {
-                return true;
-            }
-            return false;
-        }
-        return !Arrays.equals(o1, o2);
-    }
+//    private static boolean hasChanged(Object[] o1, Object[] o2) {
+//        if (o1==null) {
+//            if (o2!=null) {
+//                return true;
+//            }
+//            return false;
+//        }
+//        return !Arrays.equals(o1, o2);
+//    }
     
     
     
-    private static boolean hasChanged(CodeList o1, CodeList o2) {
-        if (o1==null) {
-            if (o2!=null) {
-                return true;
-            }
-            return false;
-        }
-        CodeList cl01 = (CodeList)o1;
-        CodeList cl02 = (CodeList)o2;
-        if (hasChanged(cl01.getCodespace(), o2.getCodespace())) {
-            return true;
-        }
-        return (hasChanged(cl01.getCodelistValue(), cl02.getCodelistValue()));
-    }
+//    private static boolean hasChanged(CodeList o1, CodeList o2) {
+//        if (o1==null) {
+//            if (o2!=null) {
+//                return true;
+//            }
+//            return false;
+//        }
+//        CodeList cl01 = (CodeList)o1;
+//        CodeList cl02 = (CodeList)o2;
+//        if (hasChanged(cl01.getCodespace(), o2.getCodespace())) {
+//            return true;
+//        }
+//        return (hasChanged(cl01.getCodelistValue(), cl02.getCodelistValue()));
+//    }
     
-    private static boolean hasChanged(Object o1, Object o2) {
-        if (o1==null) {
-            if (o2!=null) {
-                return true;
-            }
-            return false;
-        }
-        return !o1.equals(o2);
-    }
+//    private static boolean hasChanged(Object o1, Object o2) {
+//        if (o1==null) {
+//            if (o2!=null) {
+//                return true;
+//            }
+//            return false;
+//        }
+//        return !o1.equals(o2);
+//    }
     
-    public static boolean hasChanged(PGVerbundenerPlan[] a01, PGVerbundenerPlan[] a02) {
-        if (a01 == null) {
-            return (a02 == null) ? false : true;
-        }
-        if (a02 == null) {
-            return true;
-        }
-        if (a01.length != a02.length) {
-            return true;
-        }
-        for (int i=0; i<a01.length; i++) {
-
-            VerbundenerPlan vb01 = a01[i].getVerbundenerPlan();
-            VerbundenerPlan vb02 = a02[i].getVerbundenerPlan();
-            if (hasChanged(vb01.getPlanname(), vb02.getPlanname())) {
-                return true;
-            }
-            if (hasChanged(vb01.getNummer(), vb02.getNummer())) {
-                return true;
-            }
-            if (hasChanged(vb01.getRechtscharakter(), vb02.getRechtscharakter())) {
-                return true;
-            }
-            if (hasChanged(vb01.getVerbundenerplan(), vb02.getVerbundenerplan())) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    public static boolean hasChanged(PGVerbundenerPlan[] a01, PGVerbundenerPlan[] a02) {
+//        if (a01 == null) {
+//            return (a02 == null) ? false : true;
+//        }
+//        if (a02 == null) {
+//            return true;
+//        }
+//        if (a01.length != a02.length) {
+//            return true;
+//        }
+//        for (int i=0; i<a01.length; i++) {
+//
+//            VerbundenerPlan vb01 = a01[i].getVerbundenerPlan();
+//            VerbundenerPlan vb02 = a02[i].getVerbundenerPlan();
+//            if (hasChanged(vb01.getPlanname(), vb02.getPlanname())) {
+//                return true;
+//            }
+//            if (hasChanged(vb01.getNummer(), vb02.getNummer())) {
+//                return true;
+//            }
+//            if (hasChanged(vb01.getRechtscharakter(), vb02.getRechtscharakter())) {
+//                return true;
+//            }
+//            if (hasChanged(vb01.getVerbundenerplan(), vb02.getVerbundenerplan())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
     
-    public static boolean hasChanged(PGExterneReferenz[] a01, PGExterneReferenz[] a02) {
-        if (a01 == null) {
-            return (a02 == null) ? false : true;
-        }
-        if (a02 == null) {
-            return true;
-        }
-        if (a01.length != a02.length) {
-            logger.info(String.format("<>PGExterneReferenz.length %s %s", a01.length, a02.length));
-            return true;
-        }
-        for (int i=0; i<a01.length; i++) {
-
-            ExterneRef exRef01 = a01[i].object;
-            ExterneRef exRef02 = a02[i].object;
-            
-            if (hasChanged(exRef01.art, exRef02.art)) {                
-                logger.info(String.format("<>PGExterneReferenz.art idx=%s %s %s", i, exRef01.art, exRef02.art));
-                return true;
-            }
-            if (hasChanged(exRef01.beschreibung, exRef02.beschreibung)) {
-                String s1 = (exRef01.beschreibung==null ? "null" : ("\""+exRef01.beschreibung+"\""));
-                String s2 = (exRef02.beschreibung==null ? "null" : ("\""+exRef02.beschreibung+"\""));
-                logger.info(String.format("<>PGExterneReferenz.beschreibung idx=%s %s %s", i, s1, s2));
-                return true;
-            }
-            if (hasChanged(exRef01.datum, exRef02.datum)) {
-                logger.info(String.format("<>PGExterneReferenz.datum idx=%s %s %s", i, exRef01.datum, exRef02.datum));
-                return true;        
-            }
-            if (hasChanged(exRef01.georefmimetype, exRef02.georefmimetype)) {
-                logger.info(String.format("<>PGExterneReferenz.georefmimetype idx=%s %s %s", i, exRef01.georefmimetype, exRef02.georefmimetype));
-                return true;
-            } 
-            if (hasChanged(exRef02.georefurl, exRef02.georefurl)) {
-                logger.info(String.format("<>PGExterneReferenz.georefurl idx=%s %s %s", i, exRef01.georefurl, exRef02.georefurl));
-                return true;
-            } 
-            if (hasChanged(exRef01.informationssystemurl, exRef02.informationssystemurl)) {
-                logger.info(String.format("<>PGExterneReferenz.informationssystemurl idx=%s %s %s", i, exRef01.informationssystemurl, exRef02.informationssystemurl));
-                return true;
-            } 
-            if (hasChanged(exRef01.referenzname, exRef02.referenzname)) {
-                logger.info(String.format("<>PGExterneReferenz.referenzname idx=%s %s %s", i, exRef01.referenzname, exRef02.referenzname));
-                return true;                    
-            }
-            if (hasChanged(exRef01.referenzurl, exRef02.referenzurl)) {
-                logger.info(String.format("<>PGExterneReferenz.referenzurl idx=%s %s %s", i, exRef01.referenzurl, exRef02.referenzurl));
-                return true;
-            } 
-            if (hasChanged(exRef01.typ, exRef02.typ)) {
-                logger.info(String.format("<>PGExterneReferenz.typ idx=%s %s %s", i, exRef01.typ, exRef02.typ));
-                return true;
-            }
-        }
-        return false;
-    }
-    public static boolean hasChanged(
-            de.gdiservice.bplan.Gemeinde[] gemeinden01, 
-            de.gdiservice.bplan.Gemeinde[] gemeinden02) {
-        if (gemeinden01 == null && gemeinden02 == null) {
-            return false;
-        }
-        if (gemeinden01 == null || gemeinden02 == null) {
-            return true;                                                                                                                                                 
-        }
-        if (gemeinden01.length != gemeinden02.length) {
-            return true;
-        }
-        for (int i=0; i<gemeinden01.length; i++) {
-            if (!gemeinden01[i].equals(gemeinden02[i])) {
-                return true;
-            }
-        }
-        return false;
-    }
     
-    private static String toString(de.gdiservice.bplan.Gemeinde[] gemeinden) {
-        StringBuilder sb = new StringBuilder();
-        if (gemeinden != null) {
-            for (int i=0; i<gemeinden.length; i++) {
-                sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
-                sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
-                sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
-                sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
-            }
-        } else {
-            sb.append("null");
-        }
-        return sb.toString();
-    }
+//    public static boolean hasChanged(
+//            de.gdiservice.bplan.poi.Gemeinde[] gemeinden01, 
+//            de.gdiservice.bplan.poi.Gemeinde[] gemeinden02) {
+//        if (gemeinden01 == null && gemeinden02 == null) {
+//            return false;
+//        }
+//        if (gemeinden01 == null || gemeinden02 == null) {
+//            return true;                                                                                                                                                 
+//        }
+//        if (gemeinden01.length != gemeinden02.length) {
+//            return true;
+//        }
+//        for (int i=0; i<gemeinden01.length; i++) {
+//            if (!gemeinden01[i].equals(gemeinden02[i])) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+    
+//    private static String toString(de.gdiservice.bplan.poi.Gemeinde[] gemeinden) {
+//        StringBuilder sb = new StringBuilder();
+//        if (gemeinden != null) {
+//            for (int i=0; i<gemeinden.length; i++) {
+//                sb.append("\n\ttoString[\"").append(gemeinden[i]).append("\"\n\t");
+//                sb.append("toStrin2[ags=").append(gemeinden[i].ags).append(" rs=").append(gemeinden[i].rs);
+//                sb.append(" gemeindename=\"").append(gemeinden[i].gemeindename).append("\"");
+//                sb.append(" ortsteilname=\"").append(gemeinden[i].ortsteilname).append("\"");
+//            }
+//        } else {
+//            sb.append("null");
+//        }
+//        return sb.toString();
+//    }
 
-    public static boolean hasChanged(BPlan plan, BPlan dbPlan) {
+//    public static boolean hasChanged(BPlan plan, BPlan dbPlan) {
+//
+//        
+//
+//        if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
+//            logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
+//            return true;
+//        }
+//        if (hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
+//            logger.info(String.format("<>Externereferenzes %s %s", plan.getExternereferenzes(), dbPlan.getExternereferenzes()));
+//            return true;
+//        }
+//
+//        if (plan.geom == null || dbPlan.geom == null) {
+//            throw new IllegalArgumentException("one Plan doesnt has a geometry");
+//        }
+//        if (!plan.geom.equals(dbPlan.geom)) {
+//            logger.info(String.format("<>geom %s %s", plan.geom, dbPlan.geom));
+//            return true;
+//        }
+//        if (hasChanged(plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum)) {
+//            logger.info(String.format("<>inkrafttretensdatum %s %s", plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum));
+//            return true;
+//        }
+//        if (hasChanged(plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum)) {
+//            logger.info(String.format("<>auslegungsstartdatum %s %s", plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum));
+//            return true;
+//        }
+//        if (hasChanged(plan.auslegungsenddatum, dbPlan.auslegungsenddatum)) {
+//            logger.info(String.format("<>auslegungsenddatum %s %s", plan.auslegungsenddatum, dbPlan.auslegungsenddatum));
+//            return true;
+//        }  
+//        if (hasChanged(plan.name, dbPlan.name)) {
+//            logger.info(String.format("<>name %s %s", plan.name, dbPlan.name));
+//            return true;
+//        }
+//        if (hasChanged(plan.nummer, dbPlan.nummer)) {
+//            logger.info(String.format("<>nummer %s %s", plan.nummer, dbPlan.nummer));
+//            return true;
+//        }
+//        if (!Arrays.equals(plan.planart, dbPlan.planart)) {
+//            logger.info(String.format("<>planart %s %s", plan.planart, dbPlan.planart));
+//            return true;
+//        }
+//        if (hasChanged(plan.rechtsstand, dbPlan.rechtsstand)) {
+//            logger.info(String.format("<>rechtsstand %s %s", plan.rechtsstand, dbPlan.rechtsstand));
+//            return true;
+//        }
+//        
+//        if (hasChanged(plan.aendert, dbPlan.aendert)) {
+//            logger.info(String.format("<>aendert %s %s", plan.aendert, dbPlan.aendert));
+//            return true;
+//        }
+//        if (hasChanged(plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon)) {
+//            logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
+//            return true;
+//        }
+//        if (hasChanged(plan.internalid, dbPlan.internalid)) {
+//            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
+//            return true;
+//        }
+////        "status",
+//        if (hasChanged(plan.status, dbPlan.status)) {
+//            logger.info(String.format("<>status %s %s", plan.status, dbPlan.status));
+//            return true;
+//        }
+////        "verfahren",
+//        if (hasChanged(plan.verfahren, dbPlan.verfahren)) {
+//            logger.info(String.format("<>verfahren %s %s", plan.verfahren, dbPlan.verfahren));
+//            return true;
+//        }
+////        "untergangsdatum",
+//        if (hasChanged(plan.untergangsdatum, dbPlan.untergangsdatum)) {
+//            logger.info(String.format("<>untergangsdatum %s %s", plan.untergangsdatum, dbPlan.untergangsdatum));
+//            return true;
+//        }
+////        "genehmigungsdatum",
+//        if (hasChanged(plan.genehmigungsdatum, dbPlan.genehmigungsdatum)) {
+//            logger.info(String.format("<>genehmigungsdatum %s %s", plan.genehmigungsdatum, dbPlan.genehmigungsdatum));
+//            return true;
+//        }
+////        "gruenordnungsplan",
+//        if (hasChanged(plan.gruenordnungsplan, dbPlan.gruenordnungsplan)) {
+//            logger.info(String.format("<>gruenordnungsplan %s %s", plan.gruenordnungsplan, dbPlan.gruenordnungsplan));
+//            return true;
+//        }
+////        "ausfertigungsdatum",
+//        if (hasChanged(plan.ausfertigungsdatum, dbPlan.ausfertigungsdatum)) {
+//            logger.info(String.format("<>ausfertigungsdatum %s %s", plan.ausfertigungsdatum, dbPlan.ausfertigungsdatum));
+//            return true;
+//        }        
+////        "durchfuehrungsvertrag",
+//        if (hasChanged(plan.durchfuehrungsvertrag, dbPlan.durchfuehrungsvertrag)) {
+//            logger.info(String.format("<>durchfuehrungsvertrag %s %s", plan.durchfuehrungsvertrag, dbPlan.durchfuehrungsvertrag));
+//            return true;
+//        }         
+////        "erschliessungsvertrag",
+//        if (hasChanged(plan.erschliessungsvertrag, dbPlan.erschliessungsvertrag)) {
+//            logger.info(String.format("<>erschliessungsvertrag %s %s", plan.erschliessungsvertrag, dbPlan.erschliessungsvertrag));
+//            return true;
+//        }        
+////        "rechtsverordnungsdatum",
+//        if (hasChanged(plan.rechtsverordnungsdatum, dbPlan.rechtsverordnungsdatum)) {
+//            logger.info(String.format("<>rechtsverordnungsdatum %s %s", plan.rechtsverordnungsdatum, dbPlan.rechtsverordnungsdatum));
+//            return true;
+//        }              
+////        "satzungsbeschlussdatum",
+//        if (hasChanged(plan.satzungsbeschlussdatum, dbPlan.satzungsbeschlussdatum)) {
+//            logger.info(String.format("<>satzungsbeschlussdatum %s %s", plan.satzungsbeschlussdatum, dbPlan.satzungsbeschlussdatum));
+//            return true;
+//        }         
+////        "staedtebaulichervertrag",
+//        if (hasChanged(plan.staedtebaulichervertrag, dbPlan.staedtebaulichervertrag)) {
+//            logger.info(String.format("<>staedtebaulichervertrag %s %s", plan.staedtebaulichervertrag, dbPlan.staedtebaulichervertrag));
+//            return true;
+//        }
+//////        "veroeffentlichungsdatum",
+////        "planaufstellendegemeinde",
+//        if (hasChanged(plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde)) {
+//            logger.info(String.format("<>planaufstellendegemeinde %s %s", plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde));
+//            return true;
+//        }
+////        "veraenderungssperredatum",
+//        if (hasChanged(plan.veraenderungssperredatum, dbPlan.veraenderungssperredatum)) {
+//            logger.info(String.format("<>veraenderungssperredatum %s %s", plan.veraenderungssperredatum, dbPlan.veraenderungssperredatum));
+//            return true;
+//        }
+////        "aufstellungsbeschlussdatum",
+//        if (hasChanged(plan.aufstellungsbeschlussdatum, dbPlan.aufstellungsbeschlussdatum)) {
+//            logger.info(String.format("<>aufstellungsbeschlussdatum %s %s", plan.aufstellungsbeschlussdatum, dbPlan.aufstellungsbeschlussdatum));
+//            return true;
+//        }
+////        "traegerbeteiligungsenddatum",
+//        if (hasChanged(plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum)) {
+//            logger.info(String.format("<>traegerbeteiligungsenddatum %s %s", plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum));
+//            return true;
+//        }
+////        "veraenderungssperreenddatum",
+//        if (hasChanged(plan.veraenderungssperreenddatum, dbPlan.veraenderungssperreenddatum)) {
+//            logger.info(String.format("<>veraenderungssperreenddatum %s %s", plan.veraenderungssperreenddatum, dbPlan.veraenderungssperreenddatum));
+//            return true;
+//        }
+////        "traegerbeteiligungsstartdatum",
+//        if (hasChanged(plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum)) {
+//            logger.info(String.format("<>traegerbeteiligungsstartdatum %s %s", plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum));
+//            return true;
+//        }
+////        "verlaengerungveraenderungssperre",
+//        if (hasChanged(plan.verlaengerungveraenderungssperre, dbPlan.verlaengerungveraenderungssperre)) {
+//            logger.info(String.format("<>verlaengerungveraenderungssperre %s %s", plan.verlaengerungveraenderungssperre, dbPlan.verlaengerungveraenderungssperre));
+//            return true;
+//        }
+////        "veraenderungssperrebeschlussdatum",
+//        if (hasChanged(plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum)) {
+//            logger.info(String.format("<>veraenderungssperrebeschlussdatum %s %s", plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum));
+//            return true;
+//        }
+//        return false;
+//    }
 
-        
 
-        if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
-            logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
-            return true;
-        }
-        if (hasChanged(plan.getExternereferenzes(), dbPlan.getExternereferenzes())) {
-            logger.info(String.format("<>Externereferenzes %s %s", plan.getExternereferenzes(), dbPlan.getExternereferenzes()));
-            return true;
-        }
-
-        if (plan.geom == null || dbPlan.geom == null) {
-            throw new IllegalArgumentException("one Plan doesnt has a geometry");
-        }
-        if (!plan.geom.equals(dbPlan.geom)) {
-            logger.info(String.format("<>geom %s %s", plan.geom, dbPlan.geom));
-            return true;
-        }
-        if (hasChanged(plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum)) {
-            logger.info(String.format("<>inkrafttretensdatum %s %s", plan.inkrafttretensdatum, dbPlan.inkrafttretensdatum));
-            return true;
-        }
-        if (hasChanged(plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum)) {
-            logger.info(String.format("<>auslegungsstartdatum %s %s", plan.auslegungsstartdatum, dbPlan.auslegungsstartdatum));
-            return true;
-        }
-        if (hasChanged(plan.auslegungsenddatum, dbPlan.auslegungsenddatum)) {
-            logger.info(String.format("<>auslegungsenddatum %s %s", plan.auslegungsenddatum, dbPlan.auslegungsenddatum));
-            return true;
-        }  
-        if (hasChanged(plan.name, dbPlan.name)) {
-            logger.info(String.format("<>name %s %s", plan.name, dbPlan.name));
-            return true;
-        }
-        if (hasChanged(plan.nummer, dbPlan.nummer)) {
-            logger.info(String.format("<>nummer %s %s", plan.nummer, dbPlan.nummer));
-            return true;
-        }
-        if (!Arrays.equals(plan.planart, dbPlan.planart)) {
-            logger.info(String.format("<>planart %s %s", plan.planart, dbPlan.planart));
-            return true;
-        }
-        if (hasChanged(plan.rechtsstand, dbPlan.rechtsstand)) {
-            logger.info(String.format("<>rechtsstand %s %s", plan.rechtsstand, dbPlan.rechtsstand));
-            return true;
-        }
-        
-        if (hasChanged(plan.aendert, dbPlan.aendert)) {
-            logger.info(String.format("<>aendert %s %s", plan.aendert, dbPlan.aendert));
-            return true;
-        }
-        if (hasChanged(plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon)) {
-            logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
-            return true;
-        }
-        if (hasChanged(plan.internalid, dbPlan.internalid)) {
-            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
-            return true;
-        }
-//        "status",
-        if (hasChanged(plan.status, dbPlan.status)) {
-            logger.info(String.format("<>status %s %s", plan.status, dbPlan.status));
-            return true;
-        }
-//        "verfahren",
-        if (hasChanged(plan.verfahren, dbPlan.verfahren)) {
-            logger.info(String.format("<>verfahren %s %s", plan.verfahren, dbPlan.verfahren));
-            return true;
-        }
-//        "untergangsdatum",
-        if (hasChanged(plan.untergangsdatum, dbPlan.untergangsdatum)) {
-            logger.info(String.format("<>untergangsdatum %s %s", plan.untergangsdatum, dbPlan.untergangsdatum));
-            return true;
-        }
-//        "genehmigungsdatum",
-        if (hasChanged(plan.genehmigungsdatum, dbPlan.genehmigungsdatum)) {
-            logger.info(String.format("<>genehmigungsdatum %s %s", plan.genehmigungsdatum, dbPlan.genehmigungsdatum));
-            return true;
-        }
-//        "gruenordnungsplan",
-        if (hasChanged(plan.gruenordnungsplan, dbPlan.gruenordnungsplan)) {
-            logger.info(String.format("<>gruenordnungsplan %s %s", plan.gruenordnungsplan, dbPlan.gruenordnungsplan));
-            return true;
-        }
-//        "ausfertigungsdatum",
-        if (hasChanged(plan.ausfertigungsdatum, dbPlan.ausfertigungsdatum)) {
-            logger.info(String.format("<>ausfertigungsdatum %s %s", plan.ausfertigungsdatum, dbPlan.ausfertigungsdatum));
-            return true;
-        }        
-//        "durchfuehrungsvertrag",
-        if (hasChanged(plan.durchfuehrungsvertrag, dbPlan.durchfuehrungsvertrag)) {
-            logger.info(String.format("<>durchfuehrungsvertrag %s %s", plan.durchfuehrungsvertrag, dbPlan.durchfuehrungsvertrag));
-            return true;
-        }         
-//        "erschliessungsvertrag",
-        if (hasChanged(plan.erschliessungsvertrag, dbPlan.erschliessungsvertrag)) {
-            logger.info(String.format("<>erschliessungsvertrag %s %s", plan.erschliessungsvertrag, dbPlan.erschliessungsvertrag));
-            return true;
-        }        
-//        "rechtsverordnungsdatum",
-        if (hasChanged(plan.rechtsverordnungsdatum, dbPlan.rechtsverordnungsdatum)) {
-            logger.info(String.format("<>rechtsverordnungsdatum %s %s", plan.rechtsverordnungsdatum, dbPlan.rechtsverordnungsdatum));
-            return true;
-        }              
-//        "satzungsbeschlussdatum",
-        if (hasChanged(plan.satzungsbeschlussdatum, dbPlan.satzungsbeschlussdatum)) {
-            logger.info(String.format("<>satzungsbeschlussdatum %s %s", plan.satzungsbeschlussdatum, dbPlan.satzungsbeschlussdatum));
-            return true;
-        }         
-//        "staedtebaulichervertrag",
-        if (hasChanged(plan.staedtebaulichervertrag, dbPlan.staedtebaulichervertrag)) {
-            logger.info(String.format("<>staedtebaulichervertrag %s %s", plan.staedtebaulichervertrag, dbPlan.staedtebaulichervertrag));
-            return true;
-        }
-////        "veroeffentlichungsdatum",
-//        "planaufstellendegemeinde",
-        if (hasChanged(plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde)) {
-            logger.info(String.format("<>planaufstellendegemeinde %s %s", plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde));
-            return true;
-        }
-//        "veraenderungssperredatum",
-        if (hasChanged(plan.veraenderungssperredatum, dbPlan.veraenderungssperredatum)) {
-            logger.info(String.format("<>veraenderungssperredatum %s %s", plan.veraenderungssperredatum, dbPlan.veraenderungssperredatum));
-            return true;
-        }
-//        "aufstellungsbeschlussdatum",
-        if (hasChanged(plan.aufstellungsbeschlussdatum, dbPlan.aufstellungsbeschlussdatum)) {
-            logger.info(String.format("<>aufstellungsbeschlussdatum %s %s", plan.aufstellungsbeschlussdatum, dbPlan.aufstellungsbeschlussdatum));
-            return true;
-        }
-//        "traegerbeteiligungsenddatum",
-        if (hasChanged(plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum)) {
-            logger.info(String.format("<>traegerbeteiligungsenddatum %s %s", plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum));
-            return true;
-        }
-//        "veraenderungssperreenddatum",
-        if (hasChanged(plan.veraenderungssperreenddatum, dbPlan.veraenderungssperreenddatum)) {
-            logger.info(String.format("<>veraenderungssperreenddatum %s %s", plan.veraenderungssperreenddatum, dbPlan.veraenderungssperreenddatum));
-            return true;
-        }
-//        "traegerbeteiligungsstartdatum",
-        if (hasChanged(plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum)) {
-            logger.info(String.format("<>traegerbeteiligungsstartdatum %s %s", plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum));
-            return true;
-        }
-//        "verlaengerungveraenderungssperre",
-        if (hasChanged(plan.verlaengerungveraenderungssperre, dbPlan.verlaengerungveraenderungssperre)) {
-            logger.info(String.format("<>verlaengerungveraenderungssperre %s %s", plan.verlaengerungveraenderungssperre, dbPlan.verlaengerungveraenderungssperre));
-            return true;
-        }
-//        "veraenderungssperrebeschlussdatum",
-        if (hasChanged(plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum)) {
-            logger.info(String.format("<>veraenderungssperrebeschlussdatum %s %s", plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum));
-            return true;
-        }
-        return false;
-    }
-
-
-    public static void print(String text, BPlan bPlan) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(text).append('\n');
-        sb.append('\t').append("[id=" + bPlan.id + ", name=" + bPlan.name + ", gml_id=" + bPlan.gml_id + ", nummer=" + bPlan.nummer + ", planart="
-                + bPlan.planart + ", rechtsstand=" + bPlan.rechtsstand + ", inkrafttretensdatum=" + bPlan.inkrafttretensdatum);
-        sb.append("\n\tgemeinde=[");
-        if (bPlan.gemeinde!=null && bPlan.gemeinde.length>0) {
-            for (int i=0; i<bPlan.gemeinde.length; i++) {
-                if (i>0) {
-                    sb.append(", ");
-                }
-                sb.append(bPlan.gemeinde[i]);
-            }
-        }
-        sb.append("]");
-        sb.append("\n\t").append(bPlan.gemeinde[0].getValue());
-
-        sb.append("\n\texternereferenz=[");
-        PGExterneReferenz[] pgExterneReferenzs = bPlan.externeReferenzes;
-        if (pgExterneReferenzs!=null) {
-            for (int i = 0; i < pgExterneReferenzs.length; i++) {
-                ExterneRef exRef = pgExterneReferenzs[i].object;
-                sb.append("\n\t\tExterneRef [georefurl=" + exRef.georefurl + ", georefmimetype=" + exRef.georefmimetype + ", art=" + exRef.art
-                        + ", informationssystemurl=" + exRef.informationssystemurl + ", referenzname=" + exRef.referenzname + ", referenzurl="
-                        + exRef.referenzurl);
-                sb.append("\n\t\treferenzmimetype=" + exRef.referenzmimetype);
-                sb.append("\n\t\tbeschreibung=" + exRef.beschreibung + ", datum=" + exRef.datum + ", typ=" + exRef.typ + "]");
-
-            }
-        }
-        sb.append("\n\tgeom=" + bPlan.geom + "]");
-        System.out.println(sb);
-    }
+//    public static void print(String text, BPlan bPlan) {
+//        StringBuilder sb = new StringBuilder();
+//        sb.append(text).append('\n');
+//        sb.append('\t').append("[id=" + bPlan.id + ", name=" + bPlan.name + ", gml_id=" + bPlan.gml_id + ", nummer=" + bPlan.nummer + ", planart="
+//                + Arrays.toString(bPlan.planart) + ", rechtsstand=" + bPlan.rechtsstand + ", inkrafttretensdatum=" + bPlan.inkrafttretensdatum);
+//        sb.append("\n\tgemeinde=[");
+//        if (bPlan.gemeinde!=null && bPlan.gemeinde.length>0) {
+//            for (int i=0; i<bPlan.gemeinde.length; i++) {
+//                if (i>0) {
+//                    sb.append(", ");
+//                }
+//                sb.append(bPlan.gemeinde[i]);
+//            }
+//        }
+//        sb.append("]");
+//        sb.append("\n\t").append(bPlan.gemeinde[0].getValue());
+//
+//        sb.append("\n\texternereferenz=[");
+//        PGSpezExterneReferenz[] pgExterneReferenzs = bPlan.externeReferenzes;
+//        if (pgExterneReferenzs!=null) {
+//            for (int i = 0; i < pgExterneReferenzs.length; i++) {
+//                SpezExterneRef exRef = pgExterneReferenzs[i].object;
+//                sb.append("\n\t\tExterneRef [georefurl=" + exRef.georefurl + ", georefmimetype=" + exRef.georefmimetype + ", art=" + exRef.art
+//                        + ", informationssystemurl=" + exRef.informationssystemurl + ", referenzname=" + exRef.referenzname + ", referenzurl="
+//                        + exRef.referenzurl);
+//                sb.append("\n\t\treferenzmimetype=" + exRef.referenzmimetype);
+//                sb.append("\n\t\tbeschreibung=" + exRef.beschreibung + ", datum=" + exRef.datum + ", typ=" + exRef.typ + "]");
+//
+//            }
+//        }
+//        sb.append("\n\tgeom=" + bPlan.geom.getGeometryType() + "]");
+////        System.out.println(sb);
+//        logger.debug(sb.toString());
+//    }
 
 //    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection con, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 //
@@ -901,30 +874,69 @@ public class BPlanImporter {
 //
 //    }    
     
+    
+    public static XPPlanImporterI getImporter(ImportConfigEntry entry, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+        XPPlanImporterI planImporter = null;
+        
+        String tableKonvertierung = entry.testtable_prefix == null ? "xplankonverter.konvertierungen" : "xplankonverter."+entry.testtable_prefix+"konvertierungen";
+        String tableBPlan = entry.testtable_prefix == null ? "xplan_gml.bp_plan" : "xplan_gml."+entry.testtable_prefix+"bp_plan";
+        String tableBPBereich = entry.testtable_prefix == null ? "xplan_gml.bp_bereich" : "xplan_gml."+entry.testtable_prefix+"bp_bereich";
+        String tableFPlan = entry.testtable_prefix == null ? "xplan_gml.fp_plan" : "xplan_gml."+entry.testtable_prefix+"fp_plan";
+        String tableSOPlan = entry.testtable_prefix == null ? "xplan_gml.so_plan" : "xplan_gml."+entry.testtable_prefix+"so_plan";
+        
+        if (entry.onlineresource.indexOf("nwm")>=0) {
+            if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {                
+                planImporter = new BPlanNwmImporter(tableKonvertierung, tableBPlan, tableBPBereich, BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                planImporter = new FPlanNwmImporter(tableKonvertierung, tableFPlan, kvwmapUrl, kvwmapLoginName, kvwmapPassword );                
+            } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                planImporter = new SOPlanNwmImporter(tableKonvertierung, tableSOPlan, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else {
+                throw new IllegalArgumentException("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+            }
+        } else {
+            if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                planImporter = new BPlanImporter(tableKonvertierung, tableBPlan, BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                planImporter = new FPlanImporter(tableKonvertierung, tableFPlan, FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+            } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+                planImporter = new SOPlanImporter(tableKonvertierung, tableSOPlan, SOPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );                    
+            } else {
+                throw new IllegalArgumentException("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+            }
+        }
+        return planImporter;
+    }
+    
+    
     public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
-            BPlanImporter bplImport;
-            BPlanNwmImporter bplNwmImport;
-            FPlanImporter fplImport;
-            FPlanNwmImporter fplNwmImport;
-            SOPlanImporter soplImport;
-            SOPlanNwmImporter soplNwmImport;
-            if (BPlanImportStarter.isSqlTypeSupported(conRead, "xp_spezexternereferenzauslegung")) {
-                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                bplNwmImport = new BPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                fplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-            } else {
-                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                bplNwmImport = new BPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                fplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
-            }
+//            BPlanImporter bplImport;
+//            BPlanNwmImporter bplNwmImport;
+//            FPlanImporter fplImport;
+//            FPlanNwmImporter fplNwmImport;
+//            SOPlanImporter soplImport;
+//            SOPlanNwmImporter soplNwmImport;
+//            
+//            
+//            
+//            
+//            if (BPlanImportStarter.isSqlTypeSupported(conRead, "xp_spezexternereferenzauslegung")) {
+//                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                bplNwmImport = new BPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                fplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1n, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//            } else {
+//                bplImport = new BPlanImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                bplNwmImport = new BPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.bp_plan", BPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                fplImport = new FPlanImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", FPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                fplNwmImport = new FPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.fp_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                soplImport = new SOPlanImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", SOPlanImporter.Version.v5_1, kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
+//            }
 
             LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
@@ -934,31 +946,37 @@ public class BPlanImporter {
                 if (entry instanceof JobEntry) {
                     ConfigReader.setJobStarted(conWrite, (JobEntry)entry);
                 }
-                ImportLogger logger = new ImportLogger();
-                if (entry.onlineresource.indexOf("nwm")>=0) {
-                    if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        bplNwmImport.importWFS(conWrite, conRead, entry, logger);
-                    } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        fplNwmImport.importWFS(conWrite, conRead, entry, logger);
-                    } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        soplNwmImport.importWFS(conWrite, conRead, entry, logger);                    
-                    } else {
-                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
-                    }
-                } else {
-                    if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        bplImport.importWFS(conWrite, conRead, entry, logger);
-                    } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        fplImport.importWFS(conWrite, conRead, entry, logger);
-                    } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
-                        soplImport.importWFS(conWrite, conRead, entry, logger);                    
-                    } else {
-                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
-                    }
-                }
-                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+                ImportLogger importLogger = new ImportLogger();
+                XPPlanImporterI planImporter = getImporter(entry, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                planImporter.importWFS(conWrite, conRead, entry, importLogger);
+//                if (entry.onlineresource.indexOf("nwm")>=0) {
+//                    if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        bplNwmImport.importWFS(conWrite, conRead, entry, logger);
+//                    } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        fplNwmImport.importWFS(conWrite, conRead, entry, logger);
+//                    } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        soplNwmImport.importWFS(conWrite, conRead, entry, logger);                    
+//                    } else {
+//                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+//                    }
+//                } else {
+//                    if ("B_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        bplImport.importWFS(conWrite, conRead, entry, logger);
+//                    } else if ("F_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        fplImport.importWFS(conWrite, conRead, entry, logger);
+//                    } else if ("SO_PLAN".equalsIgnoreCase(entry.featuretype)) {
+//                        soplImport.importWFS(conWrite, conRead, entry, logger);                    
+//                    } else {
+//                        logger.addError("Featuretype \"" + entry.featuretype + "\" wird nicht unterstützt. Unterstützt werden nur B_PLAN, F_PLAN und SO_PLAN");
+//                    }
+//                }
                 
-                List<String> errors = logger.getErrors();
+                
+                // TODO temp disabled
+//                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+                logger.info(importLogger.getText());
+                
+                List<String> errors = importLogger.getErrors();
                 if (errors!=null && errors.size()>0) {
                     if (eMailSender != null) {
                         sendErrors(errors, eMailSender, entry);

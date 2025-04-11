@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.gdiservice.bplan.poi.*;
 import de.gdiservice.bplan.dao.BPBereichDAO;
 import de.gdiservice.bplan.dao.BPlanDAO;
 import de.gdiservice.bplan.konvertierung.Gemeinde;
@@ -22,24 +23,21 @@ import de.gdiservice.bplan.konvertierung.GemeindeDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung;
 import de.gdiservice.bplan.konvertierung.Konvertierung.KonvertierungStatus;
 import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
-import de.gdiservice.bplan.poi.BPBereich;
-import de.gdiservice.bplan.poi.BPlan;
-import de.gdiservice.bplan.poi.HasChangedFunctions;
 import de.gdiservice.wfs.BPBereichFactory;
 import de.gdiservice.wfs.GeolexBPlanFactory;
 import de.gdiservice.wfs.WFSClient;
 import de.gdiservice.wfs.WFSFactory;
 
-public class BPlanNwmImporter extends BPlanImporter {
+public class PlanNwmImporter extends BPlanImporter {
     
-    final static Logger logger = LoggerFactory.getLogger(BPlanNwmImporter.class);
+    final static Logger logger = LoggerFactory.getLogger(PlanNwmImporter.class);
     
     protected String bpbereichTable;
     
     List<BPBereich> bereiche;
     
 
-    public BPlanNwmImporter(String konvertierungTable, String bplanTable, String bpbereichTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public PlanNwmImporter(String konvertierungTable, String bplanTable, String bpbereichTable, Version version, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
         super(konvertierungTable, bplanTable, version, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
         this.bpbereichTable = bpbereichTable;
         System.err.println("newBPlanNwmImporter");
@@ -143,7 +141,7 @@ public class BPlanNwmImporter extends BPlanImporter {
                 importLogger.addError("Es gibt mehrere BP_Bereiche mit der GmlId =\""+bereich.getGml_id()+"\". Bereiche mit dieser GmlId werden nicht eingelesen.");
             }
             lBPBereichGmlIds.put(bereich.getGml_id(), bereich);
-            UUID gehoertzuplan = bereich.getGehoertzuplan(); 
+            UUID gehoertzuplan = bereich.getGehoertzuplan();
             if (gehoertzuplan == null) {
                 logger.info("Bei dem BP_Bereich mit GmlId =\""+bereich.getGml_id()+"\" ist der Wert gehoertzuplan nicht gesetzt. Wird ignoriert");
                 importLogger.addError("Bei dem BP_Bereich mit GmlId =\""+bereich.getGml_id()+"\" ist der Wert gehoertzuplan nicht gesetzt. Wird ignoriert");
@@ -159,22 +157,21 @@ public class BPlanNwmImporter extends BPlanImporter {
                         importLogger.addError("Bei dem BP_Bereich für den Plan \""+bereich.getGehoertzuplan()+"\" ist keim GmlId angegeben. Zufällige GmlId \""+bereich.gml_id +"\" wurde erzeugt.");
                     }
                     lValidBereiche.add(bereich);
-                    BPBereich[] bereicheOfPlan = lGehoertzuplan2BereicheereichGmlIds.get(gehoertzuplan);
+                    BPBereich[] bereiche = lGehoertzuplan2BereicheereichGmlIds.get(gehoertzuplan);
                     if (bereiche == null) {
                         lGehoertzuplan2BereicheereichGmlIds.put(gehoertzuplan, new BPBereich[] {bereich});
                     } else {
-                        bereicheOfPlan = Arrays.copyOf(bereicheOfPlan, bereicheOfPlan.length + 1);
-                        bereicheOfPlan[bereicheOfPlan.length-1] = bereich;
-//                        logger.debug("mehr als einer");
-//                        for (int bNr=0; bNr<bereicheOfPlan.length; bNr++) {
-//                            logger.debug(bereicheOfPlan[bNr].gml_id+"  gehörtzu="+bereicheOfPlan[bNr].getGehoertzuplan());
-//                        }
-                        lGehoertzuplan2BereicheereichGmlIds.put(gehoertzuplan, bereicheOfPlan);
+                        bereiche = Arrays.copyOf(bereiche, bereiche.length + 1);
+                        bereiche[bereiche.length-1] = bereich;
+                        logger.debug("mehr als einer");
+                        for (int bNr=0; bNr<bereiche.length; bNr++) {
+                            logger.debug(bereiche[bNr].gml_id+"  gehörtzu="+bereiche[bNr].getGehoertzuplan());
+                        }
+                        lGehoertzuplan2BereicheereichGmlIds.put(gehoertzuplan, bereiche);
                     }
                 }
             }
         }
-        
         logger.debug("Verarbeite Pläne");
         GemeindeDAO gemeindeDAO = new GemeindeDAO(conRead);
         BPlanDAO bplanDao = new BPlanDAO(conWrite, conRead, bplanTable);

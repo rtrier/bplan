@@ -1,4 +1,4 @@
-package de.gdiservice.bplan;
+package de.gdiservice.bplan.poi;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
