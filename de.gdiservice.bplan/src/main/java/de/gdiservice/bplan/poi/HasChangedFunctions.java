@@ -374,16 +374,18 @@ public class HasChangedFunctions {
             logger.info(String.format("<>user_id %s %s", o1.user_id, o2.user_id));
             return true;
         }
-//      created_at timestamp without time zone NOT NULL DEFAULT now(),        
-        if (!Objects.equals(o1.created_at, o2.created_at)) {
-            logger.info(String.format("<>created_at %s %s", o1.created_at, o2.created_at));
-            return true;
-        }
+//      Wir ignorieren created_at und updated_at
+//      created_at timestamp without time zone NOT NULL DEFAULT now(),     
+//        if (o1.created_at==null )
+//        if (!Objects.equals(o1.created_at, o2.created_at)) {
+//            logger.info(String.format("<>created_at %s %s", o1.created_at, o2.created_at));
+//            return true;
+//        }
 //      updated_at timestamp without time zone NOT NULL DEFAULT now(),
-        if (!Objects.equals(o1.updated_at, o2.updated_at)) {
-            logger.info(String.format("<>updated_at %s %s", o1.updated_at, o2.updated_at));
-            return true;
-        }
+//        if (!Objects.equals(o1.updated_at, o2.updated_at)) {
+//            logger.info(String.format("<>updated_at %s %s", o1.updated_at, o2.updated_at));
+//            return true;
+//        }
 //      konvertierung_id integer,
         if (!Objects.equals(o1.konvertierung_id, o2.konvertierung_id)) {
             logger.info(String.format("<>konvertierung_id %s %s", o1.konvertierung_id, o2.konvertierung_id));

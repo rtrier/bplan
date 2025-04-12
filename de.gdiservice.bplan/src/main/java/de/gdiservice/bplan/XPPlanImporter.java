@@ -314,7 +314,7 @@ public abstract class XPPlanImporter<T extends XPPlan> implements XPPlanImporter
                 XPPlanImporterI planImporter = getImporter(entry, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
                 planImporter.importWFS(conWrite, conRead, entry, importLogger);
 
-//                logDAO.insert(logger.getTime(), entry.stelle_id, logger.getText());
+                logDAO.insert(importLogger.getTime(), entry.stelle_id, importLogger.getText());
                 logger.info("importLogger:\n"+ importLogger.getText());
                 
                 
