@@ -67,9 +67,11 @@ public abstract class XPBereichDAO<T extends XPBereich<?>>  extends AbstractDAO<
 //      user_id integer,
         stmt.setObject(i++, bereich.user_id);
 //      created_at timestamp without time zone NOT NULL DEFAULT now(),
-        stmt.setObject(i++, bereich.created_at);
+        LocalDate created_at = bereich.created_at==null? LocalDate.now() : bereich.created_at;
+        stmt.setObject(i++, created_at);
 //      updated_at timestamp without time zone NOT NULL DEFAULT now(),
-        stmt.setObject(i++, bereich.updated_at);
+        LocalDate updated_at = bereich.updated_at==null? LocalDate.now() : bereich.updated_at;
+        stmt.setObject(i++, updated_at);
 //      konvertierung_id integer,
         stmt.setObject(i++, bereich.konvertierung_id);
 //       planinhalt text COLLATE pg_catalog."default",
