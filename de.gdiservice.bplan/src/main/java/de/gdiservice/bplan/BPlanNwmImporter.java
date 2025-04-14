@@ -160,7 +160,7 @@ public class BPlanNwmImporter extends BPlanImporter {
                     }
                     lValidBereiche.add(bereich);
                     BPBereich[] bereicheOfPlan = lGehoertzuplan2BereicheereichGmlIds.get(gehoertzuplan);
-                    if (bereiche == null) {
+                    if (bereicheOfPlan == null) {
                         lGehoertzuplan2BereicheereichGmlIds.put(gehoertzuplan, new BPBereich[] {bereich});
                     } else {
                         bereicheOfPlan = Arrays.copyOf(bereicheOfPlan, bereicheOfPlan.length + 1);

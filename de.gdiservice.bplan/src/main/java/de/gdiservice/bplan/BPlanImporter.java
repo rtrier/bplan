@@ -460,13 +460,13 @@ public class BPlanImporter implements XPPlanImporterI {
             
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
             bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
+            updateBPlaene(conWrite, conRead, importLogger, entry, bPlans);
         } 
         catch (Exception ex) {
             logger.error("error reading from service " + entry.bezeichnung + " with url=\"" + entry.onlineresource +"\"", ex);
             importLogger.addError("ERROR - Reading WFS: \""+ entry.onlineresource + "\" error:["+ex.getMessage()+"]");                
         }
 
-        updateBPlaene(conWrite, conRead, importLogger, entry, bPlans);
 
     }
 
