@@ -79,7 +79,7 @@ public class BPlanImportStarter {
                 String kvwmapUrl = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_URL);
                 String kvwmapLoginName = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_LOGIN_NAME);
                 String kvwmapPassword = (String)context.getJobDetail().getJobDataMap().get(KVWMAP_PASWORD);
-                BPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                XPPlanImporter.runImport(dbParam, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
             }
             catch (Throwable ex) {
                 ex.printStackTrace();

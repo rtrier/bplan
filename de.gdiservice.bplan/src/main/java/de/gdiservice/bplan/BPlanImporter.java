@@ -455,8 +455,8 @@ public class BPlanImporter implements XPPlanImporterI {
         try {
             String sVersion = (entry.onlineresource.indexOf("nwm")>=0) ? "2.0.0" : "1.1.0";
             
-//            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
-            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833&COUNT=50";
+            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833";
+//            final String wfsUrl = entry.onlineresource + "?service=WFS&VERSION="+sVersion+"&REQUEST=GetFeature&TYPENAME=" + entry.featuretype + "&SRSNAME=epsg:25833&COUNT=50";
             
             importLogger.addLine("Reading WFS: \""+ entry.onlineresource + "\"");
             bPlans = WFSClient.read(wfsUrl, wfsFactory, importLogger);
@@ -909,7 +909,7 @@ public class BPlanImporter implements XPPlanImporterI {
     }
     
     
-    public static void runImport(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public static void runImportX(List<? extends ImportConfigEntry> importConfigEntries, Connection conWrite, Connection conRead, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
 
         try {                
 //            BPlanImporter bplImport;
@@ -992,7 +992,7 @@ public class BPlanImporter implements XPPlanImporterI {
 
     }
 
-    public static void runImport(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
+    public static void runImportX(DBConnectionParameter dbParam, EMailSender eMailSender, String kvwmapUrl, String kvwmapLoginName, String kvwmapPassword) {
         Connection conWrite = null;
         Connection conRead = null;
         try {
@@ -1002,7 +1002,7 @@ public class BPlanImporter implements XPPlanImporterI {
             try {
                 List<ImportConfigEntry> importConfigEntries = ConfigReader.readConfig(conRead, "xplankonverter.import_services");
                 
-                runImport(importConfigEntries, conWrite, conRead, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                runImportX(importConfigEntries, conWrite, conRead, eMailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
 
             } catch (Exception ex) {
                 ex.printStackTrace();

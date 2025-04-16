@@ -23,7 +23,7 @@ public class ImportJobRunner {
             
             List<JobEntry> l = ConfigReader.readJobs(conWrite, kvwmapUrl);
             if (l!=null && l.size()>0) {                
-                BPlanImporter.runImport(l, conWrite, conRead, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
+                XPPlanImporter.runImport(l, conWrite, conRead, emailSender, kvwmapUrl, kvwmapLoginName, kvwmapPassword);
             }
         }
         catch (Exception ex) {
