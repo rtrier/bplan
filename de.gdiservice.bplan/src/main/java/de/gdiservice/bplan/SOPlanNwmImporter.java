@@ -2,7 +2,6 @@ package de.gdiservice.bplan;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -119,8 +118,8 @@ public class SOPlanNwmImporter extends SOPlanImporter {
                         boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);   
 
                         if (succeded) {
-                            if (plan.getGenehmigungsdatum()!=null) {
-                                konvertierungDAO.updatePublishDate(konvertierung.id, plan.getGenehmigungsdatum());
+                            if (plan.getVeroeffentlichungsDatum()!=null) {
+                                konvertierungDAO.updatePublishDate(konvertierung.id, plan.getVeroeffentlichungsDatum());
                                 conWrite.commit();
                             }
                             countSucceded++;

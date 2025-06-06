@@ -45,8 +45,12 @@ public class SOPlan extends XPPlan {
 
     public Gemeinde[] planaufstellendegemeinde; // neu
     
+    public LocalDate veroeffentlichungsDatum; // neu
+    
+    public LocalDate aufstellungsbeschlussDatum; // neu
     
     
+
 
     public String getId() {
         return id;
@@ -113,7 +117,21 @@ public class SOPlan extends XPPlan {
     
     
 
-
+    public LocalDate getVeroeffentlichungsDatum() {
+        return veroeffentlichungsDatum;
+    }
+    public void setVeroeffentlichungsDatum(LocalDate veroeffentlichungsDatum) {
+        this.veroeffentlichungsDatum = veroeffentlichungsDatum;
+    }
+    
+    public LocalDate getAufstellungsbeschlussdatum() {
+        return aufstellungsbeschlussDatum;
+        
+    }
+    public void setAufstellungsbeschlussdatum(LocalDate localDate) {
+        this.aufstellungsbeschlussDatum = localDate;
+        
+    }
 
 
 

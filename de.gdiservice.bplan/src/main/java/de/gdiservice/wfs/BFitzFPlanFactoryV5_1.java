@@ -18,10 +18,12 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import de.gdiservice.bplan.poi.CodeList;
 import de.gdiservice.bplan.poi.SpezExterneRef;
+import de.gdiservice.bplan.poi.VerbundenerPlan;
 import de.gdiservice.bplan.poi.FPlan;
 import de.gdiservice.bplan.poi.Gemeinde;
 import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
 import de.gdiservice.bplan.poi.PGSpezExterneReferenzAuslegung;
+import de.gdiservice.bplan.poi.PGVerbundenerPlan;
 import de.gdiservice.bplan.poi.PlanaufstellendeGemeinde;
 
 public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
@@ -46,8 +48,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         
 
         final FPlan fplan = new FPlan();
-
-        fplan.setInternalId(f.getID());        
+      
         fplan.setName ( (String) f.getAttribute("name"));
         String gml_id = (String) f.getAttribute("gml_id");
         if (gml_id==null) {
@@ -140,7 +141,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         
         
         
-        String sAufstellungsbeschlussDatum = (String) f.getAttribute("aufstellungsbeschlussDatum");
+        String sAufstellungsbeschlussDatum = (String) f.getAttribute("aufstellungsbeschlussdatum");
         if (sAufstellungsbeschlussDatum!=null && sAufstellungsbeschlussDatum.trim().length()>0) {
             try {
                 fplan.setAufstellungsbeschlussDatum(  LocalDate.parse(sAufstellungsbeschlussDatum));
@@ -160,7 +161,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         String sGenehmigungsdatum = (String) f.getAttribute("genehmigungsdatum");
         if (sGenehmigungsdatum!=null && sGenehmigungsdatum.trim().length()>0) {
             try {
-                fplan.setEntwurfsbeschlussdatum(  LocalDate.parse(sGenehmigungsdatum));
+                fplan.setGenehmigungsdatum(  LocalDate.parse(sGenehmigungsdatum));
             } catch (DateTimeParseException e) {
                 throw new IOException("Konnt Genehmigungsdatum nicht \""+sGenehmigungsdatum+"\" parsen");
             }
@@ -168,7 +169,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
       String sPlanbeschlussdatum = (String) f.getAttribute("planbeschlussdatum");
       if (sPlanbeschlussdatum!=null && sPlanbeschlussdatum.trim().length()>0) {
           try {
-              fplan.setEntwurfsbeschlussdatum(  LocalDate.parse(sPlanbeschlussdatum));
+              fplan.setPlanbeschlussdatum(LocalDate.parse(sPlanbeschlussdatum));
           } catch (DateTimeParseException e) {
               throw new IOException("Konnt Planbeschlussdatum nicht \""+sPlanbeschlussdatum+"\" parsen");
           }
@@ -176,7 +177,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
        String sTechnherstelldatum = (String) f.getAttribute("technherstelldatum");
         if (sTechnherstelldatum!=null && sTechnherstelldatum.trim().length()>0) {
             try {
-                fplan.setEntwurfsbeschlussdatum(  LocalDate.parse(sTechnherstelldatum));
+                fplan.setTechnherstelldatum(  LocalDate.parse(sTechnherstelldatum));
             } catch (DateTimeParseException e) {
                 throw new IOException("Konnt Technherstelldatum nicht \""+sTechnherstelldatum+"\" parsen");
             }
@@ -184,7 +185,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         String sUntergangsdatum = (String) f.getAttribute("untergangsdatum");
       if (sUntergangsdatum!=null && sUntergangsdatum.trim().length()>0) {
           try {
-              fplan.setEntwurfsbeschlussdatum(  LocalDate.parse(sUntergangsdatum));
+              fplan.setUntergangsdatum( LocalDate.parse(sUntergangsdatum));
           } catch (DateTimeParseException e) {
               throw new IOException("Konnt Untergangsdatum nicht \""+sUntergangsdatum+"\" parsen");
           }
@@ -192,7 +193,7 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
         String sVeroeffentlichungsdatum = (String) f.getAttribute("veroeffentlichungsdatum");
       if (sVeroeffentlichungsdatum!=null && sVeroeffentlichungsdatum.trim().length()>0) {
           try {
-              fplan.setEntwurfsbeschlussdatum(  LocalDate.parse(sVeroeffentlichungsdatum));
+              fplan.setVeroeffentlichungsdatum(  LocalDate.parse(sVeroeffentlichungsdatum));
           } catch (DateTimeParseException e) {
               throw new IOException("Konnt Veroeffentlichungsdatum nicht \""+sVeroeffentlichungsdatum+"\" parsen");
           }
@@ -241,8 +242,31 @@ public class BFitzFPlanFactoryV5_1 implements WFSFactory<FPlan>  {
           }
       }           
 
+      
+      fplan.setVerfahren(GeolexBPlanFactory.getAsString(f, "verfahren")); 
         
-        
+//    aendert = {"rechtscharakter":"1100","verbundenerplan":"96cedb90-4910-11ec-aace-17ecec70de25"}        
+    String sAendert = GeolexBPlanFactory.getAsString(f, "aendert");
+    if (sAendert!=null) {
+        VerbundenerPlan[] geaenderterPlAN = objectReader.readValue(sAendert, VerbundenerPlan[].class);      
+        PGVerbundenerPlan[] arr = new PGVerbundenerPlan[geaenderterPlAN.length];
+        for (int i=0; i<geaenderterPlAN.length; i++) {
+            arr[i] = new PGVerbundenerPlan(geaenderterPlAN[i]);
+        }
+        fplan.setAendert( arr ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
+    }
+    String sWurdegeaendertvon = GeolexBPlanFactory.getAsString(f, "wurdegeaendertvon");
+//    System.err.println("!!!sWurdegeaendertvon="+sWurdegeaendertvon);
+    if (sWurdegeaendertvon!=null) {
+        VerbundenerPlan[] geaenderterPlAN = objectReader.readValue(sWurdegeaendertvon, VerbundenerPlan[].class);      
+        PGVerbundenerPlan[] arr = new PGVerbundenerPlan[geaenderterPlAN.length];
+        for (int i=0; i<geaenderterPlAN.length; i++) {
+            arr[i] = new PGVerbundenerPlan(geaenderterPlAN[i]);
+        }  
+        fplan.setWurdeGeaendertVon( arr ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
+    }      
+    String sInternalid = GeolexBPlanFactory.getAsString(f, "internalid");
+    fplan.setInternalId(sInternalid);
         return fplan;
     }
 

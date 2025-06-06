@@ -127,6 +127,7 @@ public class XPlanNwmImporter<T extends XPPlan, B extends XPBereich<T>> extends 
     }    
     
     
+    @SuppressWarnings("unchecked")
     public void importWFS(Connection conWrite, Connection conRead, ImportConfigEntry entry, ImportLogger importLogger) throws Exception  {
         
         bereiche = null;        
@@ -183,6 +184,7 @@ public class XPlanNwmImporter<T extends XPPlan, B extends XPBereich<T>> extends 
         return null;
     }
     
+    @SuppressWarnings("unchecked")
     public void updatePlaene(Connection conWrite, Connection conRead, ImportLogger importLogger, ImportConfigEntry entry, List<T> bPlans) throws SQLException  {
         System.err.println("bplanTable="+bplanTable);
         System.err.println("bpbereichTable="+bpbereichTable);
@@ -241,7 +243,7 @@ public class XPlanNwmImporter<T extends XPPlan, B extends XPBereich<T>> extends 
                     lValidBereiche.add(bereich);
                     B[] bereiche = lGehoertzuplan2BereicheereichGmlIds.get(gehoertzuplan);
                     if (bereiche == null) {                       
-                        @SuppressWarnings("unchecked")
+                        
                         B[] arrGehoertZuPlan = (B[]) Array.newInstance(XPBereich.class, 1);
                         arrGehoertZuPlan[0] = bereich;
 //                        lGehoertzuplan2BereicheereichGmlIds.put(gehoertzuplan, (B[])Array.newInstance(bereich.getClass(), 1));
@@ -284,7 +286,57 @@ public class XPlanNwmImporter<T extends XPPlan, B extends XPBereich<T>> extends 
         
 
         for (int i=0; i<bPlans.size(); i++) {
+            
+            
+            
+            
             T plan = bPlans.get(i);
+            if ("d8969319-3f61-4377-9159-ba4f5a35f7e2".equals(plan.getGml_id().toString())) {
+                SOPlan splan = (SOPlan)plan;
+                logger.info("-----------------------------------");
+                logger.info(plan.getName());
+                logger.info(""+plan.getGml_id());
+                logger.info("Nummer\t"+plan.getNummer());
+                logger.info("Ändert\t"+Arrays.toString(plan.getAendert()));
+                logger.info("Planart\t"+splan.getPlanart());
+                logger.info("Gemeinde\t"+Arrays.toString(splan.getGemeinde()));
+                logger.info("InternalId\t"+splan.getInternalId());
+                logger.info("Externereferenzes\t"+Arrays.toString(splan.getExternereferenzes()));
+                logger.info("Untergangsdatum\t"+splan.getUntergangsdatum());
+                logger.info("Genehmigungsdatum\t"+splan.getGenehmigungsdatum());
+                logger.info("WurdeGeaendertVon\t"+Arrays.toString(splan.getWurdeGeaendertVon()));
+                logger.info("TechnHerstellDatum\t"+splan.getTechnHerstellDatum());
+                logger.info("VeroeffentlichungsDatum\t"+splan.getVeroeffentlichungsDatum());
+                logger.info("Planaufstellendegemeinde\t"+Arrays.toString(splan.getPlanaufstellendegemeinde()));
+            }
+            if ("a8bf465c-6557-4264-8759-3a3bef60efe8".equals(plan.getGml_id().toString())) {
+                FPlan splan = (FPlan)plan;
+                logger.info("name\t" + splan.getName());
+                logger.info("gml_id\t" + splan.getGml_id());
+                logger.info("nummer\t" + splan.getNummer());
+                logger.info("status\t" + splan.getStatus());
+                logger.info("aendert\t" + Arrays.toString(splan.getAendert()));
+                logger.info("planart\t" + splan.getPlanart());
+                logger.info("gemeinde\t" + Arrays.toString(splan.getGemeinde()));
+                logger.info("verfahren\t" + splan.getVerfahren());
+                logger.info("internalid\t" + splan.getInternalId());
+                logger.info("rechtsstand\t" + splan.getRechtsstand());
+                logger.info("externereferenz\t" + Arrays.toString(splan.getExternereferenzes()));
+                logger.info("untergangsdatum\t" + splan.getUntergangsdatum());
+                logger.info("genehmigungsdatum\t" + splan.getGenehmigungsdatum());
+                logger.info("wirksamkeitsdatum\t" + splan.getWirksamkeitsdatum());
+                logger.info("wurdegeaendertvon\t" + Arrays.toString(splan.getWurdeGeaendertVon()));
+                logger.info("auslegungsenddatum\t" + Arrays.toString(splan.getAuslegungsenddatum()));
+                logger.info("planbeschlussdatum\t" + splan.getPlanbeschlussdatum());
+                logger.info("technherstelldatum\t" + splan.getTechnherstelldatum());
+                logger.info("auslegungsstartdatum\t" + Arrays.toString(splan.getAuslegungsstartdatum()));
+                logger.info("entwurfsbeschlussdatum\t" + splan.getEntwurfsbeschlussdatum());
+                logger.info("veroeffentlichungsdatum\t" + splan.getVeroeffentlichungsdatum());
+                logger.info("planaufstellendegemeinde\t" + Arrays.toString(splan.getPlanaufstellendeGemeinde()));
+                logger.info("aufstellungsbeschlussdatum\t" + splan.getAufstellungsbeschlussDatum());
+                logger.info("traegerbeteiligungsenddatum\t" + Arrays.toString(splan.getTraegerbeteiligungsenddatum()));
+                logger.info("traegerbeteiligungsstartdatum\t" + Arrays.toString(splan.getTraegerbeteiligungsstartdatum()));
+            }
             if (lDoubleGmlIds.contains(plan.getGml_id())) {
                 countSkipped++;
                 continue;
@@ -500,6 +552,11 @@ public class XPlanNwmImporter<T extends XPPlan, B extends XPBereich<T>> extends 
     
     
     static class BereichsImportException extends Exception {
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
+
         public BereichsImportException(String message) {
             super(message);
         }

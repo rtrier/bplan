@@ -27,7 +27,8 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
 
     final static String[] COLUMN_NAMES = new String[] {            
             "gml_id","name","nummer","gemeinde","externereferenz","genehmigungsdatum", 
-            "planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
+            "planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon",
+            "technherstelldatum", "untergangsdatum", "planaufstellendegemeinde"
     };
     
 
@@ -212,44 +213,13 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
          return plaene;
 
      }  
-    
-    
 
-//    public List<SOPlan> findAll() throws SQLException {
-//        return findAll(null, null);
-//    }
-
-//    public List<SOPlan> findAll(String[] whereClauses, Integer maxCount) throws SQLException {
-//        logger.debug("findAll {}", tableName);
-//        List<SOPlan> bPlans = new ArrayList<>();
-//
-//        Statement stmt = null;
-//        ResultSet rs = null;
-//        try {      
-//            stmt = conRead.createStatement();
-//            String sql = DBUtil.getSelectSQLString(tableName, COLUMN_NAMES, whereClauses, maxCount);
-//            logger.debug(sql);
-//            rs = stmt.executeQuery(sql);
-//            while (rs.next()) {
-//                bPlans.add(createObject(rs));
-//            }
-//            return bPlans;
-//        }
-//        finally {
-//            if (rs!=null) {
-//                try { rs.close(); } catch (SQLException e) {}
-//            }
-//            if (stmt!=null) {
-//                try { stmt.close(); } catch (SQLException e) {}
-//            }
-//        }
-//    }
     
     @Override
     protected SOPlan createObject(ResultSet rs) throws SQLException {
-        // "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum", "auslegungsstartdatum[]", "auslegungsenddatum[]",
-        //                                                                             "rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
-        // "gml_id","name","nummer","gemeinde","externereferenz","inkrafttretensdatum","rechtsstand","planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon"
+        // "gml_id","name","nummer","gemeinde","externereferenz","genehmigungsdatum", 
+        // "planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon",
+        // "technherstelldatum", "untergangsdatum", "planaufstellendegemeinde"
         int i=1;
         SOPlan soplan = new SOPlan();
         soplan.setGml_id( rs.getObject(i++, UUID.class));
@@ -303,6 +273,12 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
             soplan.setAendert( getArray(rs.getArray(i++), PGVerbundenerPlan[].class));
             soplan.setWurdeGeaendertVon( getArray(rs.getArray(i++), PGVerbundenerPlan[].class));
             
+//          "technherstelldatum"            
+            soplan.setTechnHerstellDatum(BPlanDAO.toLocalDate(rs.getDate(i++)));
+//          "untergangsdatum",
+            soplan.setUntergangsdatum(BPlanDAO.toLocalDate(rs.getDate(i++)));
+            
+            soplan.planaufstellendegemeinde= BPlanDAO.getArray(rs.getArray(i++), PlanaufstellendeGemeinde[].class);
             return soplan;
          
         } 
@@ -622,6 +598,27 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
         }
         if (soplan.getWurdeGeaendertVon() != null) {
             stmt.setArray(i++, conWrite.createArrayOf("\"xplan_gml\".\"xp_verbundenerplan\"", soplan.getWurdeGeaendertVon()));
+        } else {
+            stmt.setArray(i++, null);
+        }
+        
+//      "technherstelldatum", 
+        if (soplan.technHerstellDatum != null) {
+            stmt.setObject(i++, soplan.technHerstellDatum);
+        } else {
+            stmt.setObject(i++, null);
+        }
+        
+//      "untergangsdatum"
+        if (soplan.getUntergangsdatum() != null) {
+            stmt.setObject(i++, 
+                    soplan.getUntergangsdatum());
+        } else {
+            stmt.setObject(i++, null);
+        }
+//      "planaufstellendegemeinde",
+        if (soplan.planaufstellendegemeinde != null) {
+            stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_planaufstellendegemeinde\"", soplan.planaufstellendegemeinde));
         } else {
             stmt.setArray(i++, null);
         }

@@ -19,8 +19,8 @@ public abstract class XPPlan implements KeyHolder<UUID> {
     String nummer; //"3.1, 1. Änderung"
     String internalid;
     
-    LocalDate genehmigungsdatum;
-    LocalDate untergangsdatum;
+    protected LocalDate genehmigungsdatum;
+    protected LocalDate untergangsdatum;
     
     PGVerbundenerPlan[] aendert;
     PGVerbundenerPlan[] wurdegeaendertvon;  

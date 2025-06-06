@@ -271,6 +271,16 @@ public class FPlan extends XPPlan implements KeyHolder<UUID> {
     public void setPlanbeschlussdatum(LocalDate planbeschlussdatum) {
         this.planbeschlussdatum = planbeschlussdatum;
     }
+    
+    
+    public LocalDate getTechnherstelldatum() {
+        return technherstelldatum;
+    }
+    public void setTechnherstelldatum(LocalDate technherstelldatum) {
+        this.technherstelldatum = technherstelldatum;
+    }
+    
+    
     public LocalDate[] getTraegerbeteiligungsenddatum() {
         return traegerbeteiligungsenddatum;
     }

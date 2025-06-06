@@ -938,7 +938,7 @@ public class BPlanImporter implements XPPlanImporterI {
 //                soplNwmImport = new SOPlanNwmImporter("xplankonverter.konvertierungen", "xplan_gml.so_plan", kvwmapUrl, kvwmapLoginName, kvwmapPassword );
 //            }
 
-            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
+//            LogDAO logDAO = new LogDAO(conWrite, "xplankonverter.import_protocol");
 
             for (int i = 0; i < importConfigEntries.size(); i++) {                
                 ImportConfigEntry entry = importConfigEntries.get(i);

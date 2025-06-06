@@ -19,10 +19,12 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import de.gdiservice.bplan.poi.Gemeinde;
 import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
 import de.gdiservice.bplan.poi.PGSpezExterneReferenzAuslegung;
+import de.gdiservice.bplan.poi.PGVerbundenerPlan;
 import de.gdiservice.bplan.poi.PG_SO_Planart;
 import de.gdiservice.bplan.poi.PlanaufstellendeGemeinde;
 import de.gdiservice.bplan.poi.SOPlan;
 import de.gdiservice.bplan.poi.SpezExterneRef;
+import de.gdiservice.bplan.poi.VerbundenerPlan;
 
 public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
 
@@ -47,7 +49,7 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
 
         final SOPlan soplan = new SOPlan();
 
-        soplan.setInternalId(f.getID());        
+//        soplan.setInternalId(f.getID());        
         soplan.setName ( (String) f.getAttribute("name"));
         String gml_id = (String) f.getAttribute("gml_id");
         if (gml_id==null) {
@@ -140,7 +142,7 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
                     throw new IOException("Konnt Untergangsdatum nicht \""+sUntergangsdatum+"\" parsen");
                 }
             } 
-            String sTechnHerstellDatum = GeolexBPlanFactory.getAsString(f, "untergangsdatum");
+            String sTechnHerstellDatum = GeolexBPlanFactory.getAsString(f, "technherstelldatum");
             if (sTechnHerstellDatum!=null && sTechnHerstellDatum.trim().length()>0) {
                 
                 sTechnHerstellDatum = PGtokenizer.removeCurlyBrace(sTechnHerstellDatum);
@@ -173,7 +175,43 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
                 }
             }            
             
+            String sVeroeffentlichungsDatum = GeolexBPlanFactory.getAsString(f, "veroeffentlichungsdatum");
+            if (sVeroeffentlichungsDatum!=null && sVeroeffentlichungsDatum.trim().length()>0) {
+                
+                sVeroeffentlichungsDatum = PGtokenizer.removeCurlyBrace(sVeroeffentlichungsDatum);
+                try {
+                    soplan.setVeroeffentlichungsDatum( LocalDate.parse(sVeroeffentlichungsDatum));
+                } catch (DateTimeParseException e) {
+                    throw new IOException("Konnt Veroeffentlichungsdatumnicht \""+sVeroeffentlichungsDatum+"\" parsen");
+                }
+            }
+            
         }
+        
+//      aendert = {"rechtscharakter":"1100","verbundenerplan":"96cedb90-4910-11ec-aace-17ecec70de25"}        
+      String sAendert = GeolexBPlanFactory.getAsString(f, "aendert");
+      if (sAendert!=null) {
+          VerbundenerPlan[] geaenderterPlAN = objectReader.readValue(sAendert, VerbundenerPlan[].class);      
+          PGVerbundenerPlan[] arr = new PGVerbundenerPlan[geaenderterPlAN.length];
+          for (int i=0; i<geaenderterPlAN.length; i++) {
+              arr[i] = new PGVerbundenerPlan(geaenderterPlAN[i]);
+          }
+          soplan.setAendert( arr ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
+      }
+      String sWurdegeaendertvon = GeolexBPlanFactory.getAsString(f, "wurdegeaendertvon");
+//      System.err.println("!!!sWurdegeaendertvon="+sWurdegeaendertvon);
+      if (sWurdegeaendertvon!=null) {
+          VerbundenerPlan[] geaenderterPlAN = objectReader.readValue(sWurdegeaendertvon, VerbundenerPlan[].class);      
+          PGVerbundenerPlan[] arr = new PGVerbundenerPlan[geaenderterPlAN.length];
+          for (int i=0; i<geaenderterPlAN.length; i++) {
+              arr[i] = new PGVerbundenerPlan(geaenderterPlAN[i]);
+          }  
+          soplan.setWurdeGeaendertVon( arr ); // "{"ags" : "13072072", "rs" : "130725260072", "gemeindename" : "Mönchhagen", "ortsteilname" : "Mönchhagen"}"
+      }
+      
+
+      String sInternalid = GeolexBPlanFactory.getAsString(f, "internalid");
+      soplan.setInternalId(sInternalid);
         return soplan;
     }
 

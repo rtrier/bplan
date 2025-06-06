@@ -350,18 +350,18 @@ public class BPlan extends XPPlan implements KeyHolder<UUID> {
     public void setAufstellungsbeschlussdatum(LocalDate aufstellungsbeschlussdatum) {
         this.aufstellungsbeschlussdatum = aufstellungsbeschlussdatum;
     }
-    public LocalDate getGenehmigungsdatum() {
-        return genehmigungsdatum;
-    }
-    public void setGenehmigungsdatum(LocalDate genehmigungsdatum) {
-        this.genehmigungsdatum = genehmigungsdatum;
-    }    
-    public LocalDate getUntergangsdatum() {
-        return untergangsdatum;
-    }
-    public void setUntergangsdatum(LocalDate untergangsdatum) {
-        this.untergangsdatum = untergangsdatum;
-    }
+//    public LocalDate getGenehmigungsdatum() {
+//        return genehmigungsdatum;
+//    }
+//    public void setGenehmigungsdatum(LocalDate genehmigungsdatum) {
+//        this.genehmigungsdatum = genehmigungsdatum;
+//    }    
+//    public LocalDate getUntergangsdatum() {
+//        return untergangsdatum;
+//    }
+//    public void setUntergangsdatum(LocalDate untergangsdatum) {
+//        this.untergangsdatum = untergangsdatum;
+//    }
     
     public LocalDate[] getTraegerbeteiligungsstartdatum() {
         return traegerbeteiligungsstartdatum;

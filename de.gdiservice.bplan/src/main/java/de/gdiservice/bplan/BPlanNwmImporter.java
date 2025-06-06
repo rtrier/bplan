@@ -263,8 +263,8 @@ public class BPlanNwmImporter extends BPlanImporter {
                     conWrite.commit();
                     boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);
                     if (succeded) {
-                        if (plan.inkrafttretensdatum!=null && succeded) {
-                            konvertierungDAO.updatePublishDate(konvertierung.id, plan.inkrafttretensdatum);
+                        if (plan.veroeffentlichungsdatum!=null && succeded) {
+                            konvertierungDAO.updatePublishDate(konvertierung.id, plan.veroeffentlichungsdatum);
                         }
                         conWrite.commit();                                  
                         countSucceded++;

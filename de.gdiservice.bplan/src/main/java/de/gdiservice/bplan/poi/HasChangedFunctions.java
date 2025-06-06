@@ -112,9 +112,6 @@ public class HasChangedFunctions {
     }    
     
     public static boolean hasChanged(FPlan plan, FPlan dbPlan) {
-
-
-
         if (hasChanged(plan.gemeinde, dbPlan.gemeinde)) {
             logger.info(String.format("<>gemeinde %s %s", toString(plan.gemeinde), toString(dbPlan.gemeinde)));
             return true;
@@ -168,10 +165,59 @@ public class HasChangedFunctions {
             logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
             return true;
         }
-//        if (hasChanged(plan.internalid, dbPlan.internalid)) {
-//            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
-//            return true;
-//        }
+        
+        if (hasChanged(plan.verfahren, dbPlan.verfahren)) {
+            logger.info(String.format("<>aendert %s %s", plan.verfahren, dbPlan.verfahren));
+            return true;
+        }
+        
+        if (hasChanged(plan.untergangsdatum, dbPlan.untergangsdatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.untergangsdatum, dbPlan.untergangsdatum));
+            return true;
+        }
+        
+        if (hasChanged(plan.genehmigungsdatum, dbPlan.genehmigungsdatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.genehmigungsdatum, dbPlan.genehmigungsdatum));
+            return true;
+        }
+        
+        if (hasChanged(plan.planbeschlussdatum, dbPlan.planbeschlussdatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.planbeschlussdatum, dbPlan.planbeschlussdatum));
+            return true;
+        }
+        if (hasChanged(plan.technherstelldatum, dbPlan.technherstelldatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.technherstelldatum, dbPlan.technherstelldatum));
+            return true;
+        }
+
+
+        if (hasChanged(plan.entwurfsbeschlussdatum, dbPlan.entwurfsbeschlussdatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.entwurfsbeschlussdatum, dbPlan.entwurfsbeschlussdatum));
+            return true;
+        }
+        if (hasChanged(plan.aufstellungsbeschlussDatum, dbPlan.aufstellungsbeschlussDatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.aufstellungsbeschlussDatum, dbPlan.aufstellungsbeschlussDatum));
+            return true;
+        }
+        
+        if (hasChanged(plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.traegerbeteiligungsenddatum, dbPlan.traegerbeteiligungsenddatum));
+            return true;
+        }
+        if (hasChanged(plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum)) {
+            logger.info(String.format("<>aendert %s %s", plan.traegerbeteiligungsstartdatum, dbPlan.traegerbeteiligungsstartdatum));
+            return true;
+        }
+        // -veroeffentlichungsdatum,
+        if (hasChanged(plan.planaufstellendeGemeinde, dbPlan.planaufstellendeGemeinde)) {
+            logger.info(String.format("<>planaufstellendegemeinde %s %s", plan.planaufstellendeGemeinde, dbPlan.planaufstellendeGemeinde));
+            return true;
+        }
+
+        if (plan.getGml_id().toString().equals("a8bf465c-6557-4264-8759-3a3bef60efe8")) {
+                return true;
+        }
+
         return false;
     }    
     
@@ -230,10 +276,10 @@ public class HasChangedFunctions {
             logger.info(String.format("<>wurdegeaendertvon %s %s", plan.wurdegeaendertvon, dbPlan.wurdegeaendertvon));
             return true;
         }
-        if (hasChanged(plan.internalid, dbPlan.internalid)) {
-            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
-            return true;
-        }
+//        if (hasChanged(plan.internalid, dbPlan.internalid)) {
+//            logger.info(String.format("<>internalid %s %s", plan.internalid, dbPlan.internalid));
+//            return true;
+//        }
 //        "status",
         if (hasChanged(plan.status, dbPlan.status)) {
             logger.info(String.format("<>status %s %s", plan.status, dbPlan.status));

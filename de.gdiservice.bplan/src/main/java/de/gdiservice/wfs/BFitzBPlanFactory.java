@@ -1,8 +1,6 @@
 package de.gdiservice.wfs;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
@@ -17,10 +15,10 @@ import org.postgresql.util.PGtokenizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import de.gdiservice.bplan.poi.SpezExterneRef;
 import de.gdiservice.bplan.poi.BPlan;
 import de.gdiservice.bplan.poi.Gemeinde;
 import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
+import de.gdiservice.bplan.poi.SpezExterneRef;
 
 public class BFitzBPlanFactory implements WFSFactory<BPlan>  {
     

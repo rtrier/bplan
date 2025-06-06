@@ -92,6 +92,7 @@ public class FPlanDAO extends AbstractDAO<UUID, FPlan> {
     @Override    
     protected int setSQLParameter(Connection con, PreparedStatement stmt, FPlan fplan, int i) throws SQLException {
         
+        
         stmt.setString(i++, fplan.getName());
         stmt.setString(i++, fplan.getNummer());
 
@@ -141,7 +142,7 @@ public class FPlanDAO extends AbstractDAO<UUID, FPlan> {
         if (fplan.verfahren != null) {
             PGobject pgObject = new PGobject();
             pgObject.setType("\"xplan_gml\".\"fp_verfahren\"");
-            pgObject.setValue(fplan.rechtsstand);
+            pgObject.setValue(fplan.verfahren);
             stmt.setObject(i++, pgObject);
         } else {
             stmt.setObject(i++, null);

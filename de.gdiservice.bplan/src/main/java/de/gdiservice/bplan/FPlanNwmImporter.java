@@ -119,8 +119,8 @@ public class FPlanNwmImporter extends FPlanImporter {
                         
                         boolean succeded = validate(konvertierung, plan, kvwmapUrl, importLogger);
                         if (succeded) {
-                            if (plan.wirksamkeitsdatum!=null && succeded) {
-                                konvertierungDAO.updatePublishDate(konvertierung.id, plan.wirksamkeitsdatum);
+                            if (plan.veroeffentlichungsdatum!=null && succeded) {
+                                konvertierungDAO.updatePublishDate(konvertierung.id, plan.veroeffentlichungsdatum);
                                 conWrite.commit();
                             }
                             countSucceded++;
