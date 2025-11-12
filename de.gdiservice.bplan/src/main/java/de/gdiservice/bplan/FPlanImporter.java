@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -130,6 +131,13 @@ public class FPlanImporter implements XPPlanImporterI {
                         
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             FPlan teilPlan = teilPlaene.get(teilPlanNr);
+                            
+                            LocalDate d = BPlanImporter.getInkrafttretensdatum(teilPlan.getExternereferenzes());
+                            if (d != null) {
+                                teilPlan.setWirksamkeitsdatum(d);
+                            }                            
+                            
+                            
                             FPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
                             Konvertierung konvertierung;
                             if (dbPlan == null) {

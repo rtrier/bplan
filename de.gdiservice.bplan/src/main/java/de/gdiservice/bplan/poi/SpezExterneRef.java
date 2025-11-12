@@ -1,5 +1,6 @@
 package de.gdiservice.bplan.poi;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -19,7 +20,8 @@ public class SpezExterneRef {
   public String referenzurl;
   public Referenzmimetype referenzmimetype;
   public String beschreibung;
-  public Date datum;
+//  public Date datum;
+  public LocalDate datum;
   public String typ;
   public Boolean nurzurauslegung;
   
@@ -72,10 +74,10 @@ public class SpezExterneRef {
   public void setBeschreibung(String beschreibung) {
     this.beschreibung = beschreibung;
   }
-  public Date getDatum() {
+  public LocalDate getDatum() {
     return datum;
   }
-  public void setDatum(Date datum) {
+  public void setDatum(LocalDate datum) {
     this.datum = datum;
   }
   public String getTyp() {
@@ -135,8 +137,8 @@ public boolean equals(Object obj) {
         if (other.datum != null)
             return false;        
     } else if (!datum.equals(other.datum)) {
-        logger.debug(datum.getClass()+"  "+datum.getTime()+"  "+datum);
-        logger.debug(other.datum.getClass()+"  "+other.datum.getTime()+"  "+other.datum);
+        logger.debug(datum.getClass()+"  "+datum+"  "+datum);
+        logger.debug(other.datum.getClass()+"  "+other.datum+"  "+other.datum);
         
         return false;
     }

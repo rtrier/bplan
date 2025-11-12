@@ -63,7 +63,7 @@ public class PGSpezExterneReferenz extends PGobject implements Serializable, Clo
 		
 		String sDatum = t.getToken(i++);
 		try {			
-		  this.object.datum = PGUtil.getDate(sDatum);		
+		  this.object.datum = PGUtil.getLocalDate(sDatum);		
 		} catch (ParseException e) {
 			throw new SQLException("String \"" + sDatum + "\" konnte nicht als Datum geparst werden");
 		}		

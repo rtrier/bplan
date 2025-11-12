@@ -36,8 +36,8 @@ public class ExterneRefAuslegung extends SpezExterneRef {
             if (other.datum != null)
                 return false;        
         } else if (!datum.equals(other.datum)) {
-            logger.debug(datum.getClass()+"  "+datum.getTime()+"  "+datum);
-            logger.debug(other.datum.getClass()+"  "+other.datum.getTime()+"  "+other.datum);
+            logger.debug(datum.getClass()+"  "+datum+"  "+datum);
+            logger.debug(other.datum.getClass()+"  "+other.datum+"  "+other.datum);
             
             return false;
         }

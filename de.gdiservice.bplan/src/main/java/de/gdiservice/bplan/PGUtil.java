@@ -2,6 +2,7 @@ package de.gdiservice.bplan;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -31,6 +32,13 @@ public class PGUtil {
         return date == null ? "" : new SimpleDateFormat("yyyy-MM-dd").format(date); 
     }
     
+    public static final String getDateValue(LocalDate date) {
+        return date == null ? "" : date.toString(); 
+    }
+    
+    public static LocalDate getLocalDate(String s) throws ParseException {
+        return s!=null && s.length()==10 ? LocalDate.parse(s) : null;
+    }
     public static Date getDate(String s) throws ParseException {
         // System.out.println("getDate(\""+s+"\")");
         if (s!=null && s.length()>0) {

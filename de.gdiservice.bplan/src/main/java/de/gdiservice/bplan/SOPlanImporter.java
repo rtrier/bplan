@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -117,6 +118,12 @@ public class SOPlanImporter implements XPPlanImporterI {
                         SOPlan previousPlan = null;
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             SOPlan teilPlan = teilPlaene.get(teilPlanNr);
+                            
+                            LocalDate d = BPlanImporter.getInkrafttretensdatum(teilPlan.getExternereferenzes());
+                            if (d != null) {
+                                teilPlan.setGenehmigungsdatum(d);
+                            } 
+                            
                             teilPlan.setInternalId(plan.getGml_id()+"-"+teilPlanNr);
                             
                             if (teilPlanNr>0) {

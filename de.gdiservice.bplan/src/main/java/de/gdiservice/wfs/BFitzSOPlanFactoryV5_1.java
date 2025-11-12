@@ -15,6 +15,7 @@ import org.postgresql.util.PGtokenizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import de.gdiservice.bplan.poi.Gemeinde;
 import de.gdiservice.bplan.poi.PGSpezExterneReferenz;
@@ -43,6 +44,7 @@ public class BFitzSOPlanFactoryV5_1 implements WFSFactory<SOPlan>  {
     public SOPlan build(SimpleFeature f) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         objectMapper.getDateFormat().setTimeZone(TimeZone.getTimeZone("CEST"));
         ObjectReader objectReader = objectMapper.reader();
         

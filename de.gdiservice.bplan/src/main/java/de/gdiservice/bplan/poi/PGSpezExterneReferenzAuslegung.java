@@ -48,7 +48,7 @@ public class PGSpezExterneReferenzAuslegung extends PGSpezExterneReferenz {
         this.object.beschreibung = PGUtil.getString(t.getToken(i++));
         String sDatum = t.getToken(i++);
         try {
-            this.object.datum = PGUtil.getDate(sDatum);
+            this.object.datum = PGUtil.getLocalDate(sDatum);
         } catch (ParseException e) {
             throw new SQLException("String \"" + sDatum + "\" konnte nicht als Datum geparst werden");
         }

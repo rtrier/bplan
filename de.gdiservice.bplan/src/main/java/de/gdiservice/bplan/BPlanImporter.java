@@ -7,9 +7,12 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -27,7 +30,6 @@ import de.gdiservice.bplan.konvertierung.GemeindeDAO;
 import de.gdiservice.bplan.konvertierung.Konvertierung;
 import de.gdiservice.bplan.konvertierung.Konvertierung.KonvertierungStatus;
 import de.gdiservice.bplan.konvertierung.KonvertierungDAO;
-import de.gdiservice.bplan.poi.BPlan;
 import de.gdiservice.bplan.poi.VerbundenerPlan.RechtscharakterPlanaenderung;
 import de.gdiservice.util.DBConnectionParameter;
 import de.gdiservice.util.EMailSender;
@@ -99,6 +101,29 @@ public class BPlanImporter implements XPPlanImporterI {
 //        return false;
 //    }
 
+    
+    static LocalDate getInkrafttretensdatum(PGSpezExterneReferenz[] referenzen) {
+        LocalDate d = null;        
+        if (referenzen!=null) {            
+            for (int refIdx=0; refIdx<referenzen.length; refIdx++) {
+                PGSpezExterneReferenz referenz = referenzen[refIdx];
+                if (refIdx==0 || d==null) {
+                    d = referenz.getExterneRef().datum;
+                }
+                String referenzname = referenz.getExterneRef().referenzname;            
+                Matcher m = BPlanGroup.p3stellig.matcher(referenzname);
+                int version = -1;
+                if (m.find() && m.groupCount()==3) {
+                    version = Integer.parseInt(m.group(3));
+                    if (version==1) {
+                        return referenz.getExterneRef().datum;
+                    }
+                }
+            }
+        }
+        return d;
+    }
+    
     public void updateBPlaene(Connection conWrite, Connection conRead, ImportLogger importLogger, ImportConfigEntry entry, List<BPlan> bPlans) throws SQLException  {
         conWrite.setAutoCommit(false);
         
@@ -128,6 +153,12 @@ public class BPlanImporter implements XPPlanImporterI {
                         BPlan previousPlan = null;
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             BPlan teilPlan = teilPlaene.get(teilPlanNr);
+                            
+                            LocalDate d = getInkrafttretensdatum(teilPlan.getExternereferenzes());
+                            if (d != null) {
+                                teilPlan.setInkrafttretensdatum(d);
+                            }
+                                                        
                             String sTeilPlanNr = (teilPlanNr<10 ? "0"+teilPlanNr : String.valueOf(teilPlanNr));
                             teilPlan.setInternalId(plan.getGml_id()+"-"+sTeilPlanNr);
                             

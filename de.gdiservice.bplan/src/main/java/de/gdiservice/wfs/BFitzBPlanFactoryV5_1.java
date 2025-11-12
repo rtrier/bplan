@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import de.gdiservice.bplan.poi.BPlan;
 import de.gdiservice.bplan.poi.ExterneRefAuslegung;
@@ -43,6 +44,7 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
     public BPlan build(SimpleFeature f) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         objectMapper.getDateFormat().setTimeZone(TimeZone.getTimeZone("CEST"));
         ObjectReader objectReader = objectMapper.reader();
         
@@ -111,7 +113,7 @@ public class BFitzBPlanFactoryV5_1 implements WFSFactory<BPlan>  {
             try {
                 extRefs = objectReader.readValue(sExtenalRefs, ExterneRefAuslegung[].class);
             } catch (IOException e) {
-               throw new IllegalArgumentException("String \""+sExtenalRefs+"\" could not be parsed as an Array of externereferenz"); 
+               throw new IllegalArgumentException("String \""+sExtenalRefs+"\" could not be parsed as an Array of externereferenz", e); 
             }	
             if (extRefs != null && extRefs.length>0) {
                 PGSpezExterneReferenz[] pgRefs = usePGExterneReferenzAuslegung?  new PGSpezExterneReferenzAuslegung[extRefs.length] : new PGSpezExterneReferenz[extRefs.length];

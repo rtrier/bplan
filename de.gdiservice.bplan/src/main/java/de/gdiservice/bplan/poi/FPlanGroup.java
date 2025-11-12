@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 
 public class FPlanGroup {
     
-    final static Pattern p3stellig = Pattern.compile("(\\d+)_(\\d+)_(\\d+)\\.");
-    final static Pattern p2stellig = Pattern.compile("(\\d+)_(\\d+)\\.");
+    public final static Pattern p3stellig = Pattern.compile("(\\d+)_(\\d+)_(\\d+)\\.");
+    public final static Pattern p2stellig = Pattern.compile("(\\d+)_(\\d+)\\.");
     
    
     
