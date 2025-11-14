@@ -29,7 +29,7 @@ public class FPlanGroup {
         
         PGSpezExterneReferenz[] pgExterneReferenzs = orgPlan.getExternereferenzes();
         
-        int idx = -1;
+        int lastVersion = -1;
         FPlanIndexed nPlan = null;
         if (pgExterneReferenzs!=null && pgExterneReferenzs.length>0) {
             for (int i=0; i<pgExterneReferenzs.length; i++) {
@@ -53,9 +53,12 @@ public class FPlanGroup {
                     throw new IllegalArgumentException("Fehler beim Aufteilen des FPlans, ReferenzName entspricht nicht dem Muster ["+orgPlan.getGml_id()+" "+orgPlan.getName()+"]");
                 }
                     // System.out.println(orgPlan.getGml_id()+"  "+refName+"  "+idx+" "+version);
-                if (idx!=version) {
-                    idx = version;
-                    nPlan = new FPlanIndexed(clone(orgPlan), idx);
+                if (lastVersion!=version) {
+                    lastVersion = version;
+                    nPlan = new FPlanIndexed(clone(orgPlan), lastVersion);
+                    if (version>0) {
+                        nPlan.plan.name = orgPlan.name + " " + String.valueOf(version) + ". Änderung";
+                    }
                     plans.add(nPlan);
                 }
                 nPlan.plan.addExterneReferenz(pgExterneReferenzs[i]);

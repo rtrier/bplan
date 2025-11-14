@@ -129,7 +129,7 @@ public class SOPlanImporter implements XPPlanImporterI {
                             if (teilPlanNr>0) {
                                 UUID teilPlanUUID = (teilPlanNr<listDBPlaene.size()) ? listDBPlaene.get(teilPlanNr).getGml_id() : UUID.randomUUID();
                                 teilPlan.setGml_id(teilPlanUUID);
-                                teilPlan.setName( teilPlan.getName() + " " + String.valueOf(teilPlanNr) + ". Änderung");
+                                // teilPlan.setName( teilPlan.getName() + " " + String.valueOf(teilPlanNr) + ". Änderung");
                                 VerbundenerPlan aendert = new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), previousPlan.getGml_id().toString());
                                 teilPlan.setAendert(aendert);
                                 VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), teilPlan.getGml_id().toString()); 

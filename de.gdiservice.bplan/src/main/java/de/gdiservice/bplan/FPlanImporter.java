@@ -112,12 +112,19 @@ public class FPlanImporter implements XPPlanImporterI {
                         FPlan previousPlan = null;
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             FPlan teilPlan = teilPlaene.get(teilPlanNr);
-                            teilPlan.setInternalId(plan.getGml_id()+"-"+teilPlanNr);
+                            
+                            LocalDate d = BPlanImporter.getInkrafttretensdatum(teilPlan.getExternereferenzes());
+                            if (d != null) {
+                                teilPlan.setWirksamkeitsdatum(d);
+                            }                            
+                            
+                            String sTeilPlanNr = (teilPlanNr<10 ? "0"+teilPlanNr : String.valueOf(teilPlanNr));
+                            teilPlan.setInternalId(plan.getGml_id()+"-"+sTeilPlanNr);
                             
                             if (teilPlanNr>0) {
                                 UUID teilPlanUUID = (teilPlanNr<listDBPlaene.size()) ? listDBPlaene.get(teilPlanNr).getGml_id() : UUID.randomUUID();
                                 teilPlan.setGml_id(teilPlanUUID);
-                                teilPlan.setName( teilPlan.getName() + " " + String.valueOf(teilPlanNr) + ". Änderung");
+                                // teilPlan.setName( teilPlan.getName() + " " + String.valueOf(teilPlanNr) + ". Änderung");
                                 VerbundenerPlan aendert = new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), previousPlan.getGml_id().toString());
                                 teilPlan.setAendert(aendert);
                                 VerbundenerPlan wurdegeaendertvon =  new VerbundenerPlan(plan.getName(), RechtscharakterPlanaenderung.Aenderung, plan.getNummer(), teilPlan.getGml_id().toString()); 
@@ -132,11 +139,7 @@ public class FPlanImporter implements XPPlanImporterI {
                         for (int teilPlanNr=0; teilPlanNr<teilPlaene.size(); teilPlanNr++) {
                             FPlan teilPlan = teilPlaene.get(teilPlanNr);
                             
-                            LocalDate d = BPlanImporter.getInkrafttretensdatum(teilPlan.getExternereferenzes());
-                            if (d != null) {
-                                teilPlan.setWirksamkeitsdatum(d);
-                            }                            
-                            
+
                             
                             FPlan dbPlan = (listDBPlaene.size()>teilPlanNr) ? listDBPlaene.get(teilPlanNr) : null;
                             Konvertierung konvertierung;
