@@ -154,13 +154,17 @@ public class Gemeinde extends PGobject implements Serializable, Cloneable {
         return ags;
     }
     public void setAgs(String ags) {
-        this.ags = ags;
+        if (ags != null) {
+            this.ags = ags.trim();
+        }
     }
     public String getRs() {
         return rs;
     }
     public void setRs(String rs) {
-        this.rs = rs;
+        if (rs !=null) {
+            this.rs = rs.trim();
+        }
     }
     public String getGemeindename() {
         return gemeindename;

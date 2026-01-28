@@ -654,13 +654,13 @@ public class SOPlanImporter implements XPPlanImporterI {
         sb.append("<br><br>");
         sb.append("Bei Fragen wenden Sie sich bitte an Herrn Trier<br>");
         sb.append("ralf.trier@gdi-service.de<br>");
-        sb.append("Tel: 0381 87397363");
+        sb.append("Tel: 0381 77863150");
         
         try {
             String bezeichng = entry.bezeichnung==null ? entry.onlineresource : String.valueOf(entry.bezeichnung);
             eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen - " + bezeichng, "ralf.trier@gdi-service.de");
             if ( entry.email != null && entry.email.contains("@") ) {
-                eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen", entry.email);
+                eMailSender.sendEmail(sb.toString(), "Fehler beim Import von BPlänen - " + bezeichng, entry.email);
             }
         } catch (Throwable ex) {
            logger.error("Fehler beim Versenden der eMail", ex);
