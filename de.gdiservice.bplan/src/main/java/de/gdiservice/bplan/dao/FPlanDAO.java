@@ -37,7 +37,8 @@ public class FPlanDAO extends AbstractDAO<UUID, FPlan> {
             "gml_id","name","nummer","gemeinde","externereferenz","wirksamkeitsdatum", "auslegungsstartdatum", "auslegungsenddatum", "rechtsstand","verfahren",
             "planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon",
             "aufstellungsbeschlussDatum","entwurfsbeschlussdatum","genehmigungsdatum","planaufstellendeGemeinde","planbeschlussdatum",
-            "status","technherstelldatum","traegerbeteiligungsenddatum","traegerbeteiligungsstartdatum","untergangsdatum"
+            "status","technherstelldatum","traegerbeteiligungsenddatum","traegerbeteiligungsstartdatum","untergangsdatum",
+            "fassungsbezeichnung"
     };
     
 
@@ -236,6 +237,12 @@ public class FPlanDAO extends AbstractDAO<UUID, FPlan> {
             stmt.setObject(i++, null);
         }
         
+        if (fplan.getFassungsbezeichnung() != null) {
+            stmt.setObject(i++, fplan.getFassungsbezeichnung());
+        } else {
+            stmt.setObject(i++, null);
+        }
+        
         return i;
     }
 
@@ -401,7 +408,7 @@ public class FPlanDAO extends AbstractDAO<UUID, FPlan> {
             fplan.traegerbeteiligungsstartdatum = BPlanDAO.toLocalDates(rs.getArray(i++));
             fplan.setUntergangsdatum(rs.getObject(i++, LocalDate.class));
 //            fplan.veroeffentlichungsdatum = BPlanDAO.toLocalDate(rs.getDate(i++));
-            
+            fplan.setFassungsbezeichnung(rs.getString(i++));
             return fplan;
          
         } 

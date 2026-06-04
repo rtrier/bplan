@@ -108,6 +108,11 @@ public class HasChangedFunctions {
             logger.info(String.format("<>planaufstellendegemeinde %s %s", plan.planaufstellendegemeinde, dbPlan.planaufstellendegemeinde));
             return true;
         }
+        
+        if (hasChanged(plan.fassungsbezeichnung, dbPlan.fassungsbezeichnung)) {
+            logger.info(String.format("<>name %s %s", plan.fassungsbezeichnung, dbPlan.fassungsbezeichnung));
+            return true;
+        }
         return false;
     }    
     
@@ -218,6 +223,10 @@ public class HasChangedFunctions {
                 return true;
         }
 
+        if (hasChanged(plan.fassungsbezeichnung, dbPlan.fassungsbezeichnung)) {
+            logger.info(String.format("<>name %s %s", plan.fassungsbezeichnung, dbPlan.fassungsbezeichnung));
+            return true;
+        }
         return false;
     }    
     
@@ -374,6 +383,10 @@ public class HasChangedFunctions {
 //        "veraenderungssperrebeschlussdatum",
         if (hasChanged(plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum)) {
             logger.info(String.format("<>veraenderungssperrebeschlussdatum %s %s", plan.veraenderungssperrebeschlussdatum, dbPlan.veraenderungssperrebeschlussdatum));
+            return true;
+        }
+        if (hasChanged(plan.fassungsbezeichnung, dbPlan.fassungsbezeichnung)) {
+            logger.info(String.format("<>name %s %s", plan.fassungsbezeichnung, dbPlan.fassungsbezeichnung));
             return true;
         }
         return false;

@@ -28,7 +28,7 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
     final static String[] COLUMN_NAMES = new String[] {            
             "gml_id","name","nummer","gemeinde","externereferenz","genehmigungsdatum", 
             "planart","raeumlichergeltungsbereich","konvertierung_id","internalid","aendert","wurdegeaendertvon",
-            "technherstelldatum", "untergangsdatum", "planaufstellendegemeinde"
+            "technherstelldatum", "untergangsdatum", "planaufstellendegemeinde", "fassungsbezeichnung"
     };
     
 
@@ -279,6 +279,8 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
             soplan.setUntergangsdatum(BPlanDAO.toLocalDate(rs.getDate(i++)));
             
             soplan.planaufstellendegemeinde= BPlanDAO.getArray(rs.getArray(i++), PlanaufstellendeGemeinde[].class);
+            
+            soplan.setFassungsbezeichnung(rs.getString(i++));
             return soplan;
          
         } 
@@ -621,6 +623,12 @@ public class SOPlanDAO extends AbstractDAO<UUID, SOPlan> {
             stmt.setArray(i++, con.createArrayOf("\"xplan_gml\".\"xp_planaufstellendegemeinde\"", soplan.planaufstellendegemeinde));
         } else {
             stmt.setArray(i++, null);
+        }
+        
+        if (soplan.getFassungsbezeichnung() != null) {
+            stmt.setObject(i++, soplan.getFassungsbezeichnung());
+        } else {
+            stmt.setObject(i++, null);
         }
         return i;
     }

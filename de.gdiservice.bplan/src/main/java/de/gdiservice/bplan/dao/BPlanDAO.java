@@ -74,6 +74,7 @@ public class BPlanDAO extends AbstractDAO<UUID, BPlan> {
             "traegerbeteiligungsstartdatum",
             "verlaengerungveraenderungssperre",
             "veraenderungssperrebeschlussdatum",
+            "fassungsbezeichnung"
     };
     
 
@@ -253,6 +254,11 @@ public class BPlanDAO extends AbstractDAO<UUID, BPlan> {
 //      "veraenderungssperrebeschlussdatum",
         stmt.setObject(i++, bplan.getVeraenderungssperrebeschlussdatum());
         
+        if (bplan.getFassungsbezeichnung() != null) {
+            stmt.setObject(i++, bplan.getFassungsbezeichnung());
+        } else {
+            stmt.setObject(i++, null);
+        }
         return i;
 
     }
@@ -472,6 +478,7 @@ public class BPlanDAO extends AbstractDAO<UUID, BPlan> {
 //            "veraenderungssperrebeschlussdatum",
             bplan.veraenderungssperrebeschlussdatum= toLocalDate(rs.getDate(i++));
             
+            bplan.setFassungsbezeichnung(rs.getString(i++));
             return bplan;
          
         } 

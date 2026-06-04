@@ -56,8 +56,12 @@ public class BPlanGroup {
                 if (lastVersion!=version) {
                     lastVersion = version;
                     nPlan = new BPlanIndexed(clone(orgPlan), lastVersion);
+                    if (version==0) {
+                        nPlan.plan.setFassungsbezeichnung("Ursprungsplan");
+                    }
                     if (version>0) {
                         nPlan.plan.name = orgPlan.name + " " + String.valueOf(version) + ". Änderung";
+                        nPlan.plan.setFassungsbezeichnung(String.valueOf(version) + ". Änderung");
                     }
                     plans.add(nPlan);
                 }
