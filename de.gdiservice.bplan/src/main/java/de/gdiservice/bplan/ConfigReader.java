@@ -134,7 +134,7 @@ public class ConfigReader {
         String sql = "select j.id, import_type ,s.id,s.bezeichnung,s.onlineresource,s.featuretype,s.stelle_id,s.created_at,s.created_from,s.updated_at,s.updated_from,s.version "
                 + "from xplankonverter.import_jobs j\r\n"
                 + "left join xplankonverter.import_services s on j.import_service_id=s.id "
-                + "where j.started_at is null";
+                + "where j.started_at is null and import_type='wfs'";
 
         try {    
             stmt = con.createStatement();
